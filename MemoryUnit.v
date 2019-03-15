@@ -40,7 +40,8 @@ module MemoryUnit
 
 	initial   //no es sintetizable pero le ayuda al sintetizador para inferir una memoria rom y para inicializarla
 	begin
-		$readmemh("rom_values_init.hex", rom);
+		//$readmemh("rom_values_init.hex", rom);
+		$readmemh("R_ins.hex", rom);
 	end
 
 	always @ (posedge clk)

@@ -45,7 +45,7 @@ module Register_File
 	input [NBITS-1 : 0]Read_Reg2, //which reg will be read
 	input [NBITS-1 : 0]Write_Reg, //Target register to write 
 	input [WORD_LENGTH-1 : 0] Write_Data, //which data will be written
-	input Write, //enable signal to write 
+	input Write, 				//enable signal to write . 1=enable, 0=disable
 	
 	output [WORD_LENGTH-1 : 0] Read_Data1, //data output 1
 	output [WORD_LENGTH-1 : 0] Read_Data2  //data output 2

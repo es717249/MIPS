@@ -38,7 +38,9 @@ reg carry_reg=0; 									//this stores the carry indicator
 reg [WORD_LENGTH:0]mask= 1<< WORD_LENGTH; //mask to check the carry			
 reg [WORD_LENGTH:0]compl_B;
 				
+wire [WORD_LENGTH-1:0] tmp_shift2;
 
+assign tmp_shift2 = dataB <<2;
 
 always@(*)begin 
 
@@ -118,9 +120,9 @@ always@(*)begin
 		end	
 		4'b1010:
 		begin
-			//do nothing
-			result_reg=0;
-			carry_reg=0;
+			//corrimiento <<2 y suma
+			result_reg= tmp_shift2 + dataB;
+			carry_reg=(result_reg & mask)?1'b1:1'b0;
 		end
 		default:
 		begin 

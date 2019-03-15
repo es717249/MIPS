@@ -4,50 +4,53 @@
  */
 
 module MIPS_new
-#
-(
-    parameter DATA_WIDTH=32,/* length of data */
-    parameter ADDR_WIDTH=8 /* bits to address the elements */
+#(
+    parameter DATA_WIDTH=32,	/* length of data */
+    parameter ADDR_WIDTH=8 		/* bits to address the elements */
 )
 (
-	input clk, 				/* clk signal */
-	input reset, 			/* async signal to reset */
-	/* Test signals */
-	input [DATA_WIDTH-1:0]Instruction_fetched, 	//signal from FF to Register files to indicate instruction	
-	input RegWrite,		/* Write enable for register file unit*/
-	input MemWrite,		/* Write enable for the memory unit */
-	input MemtoReg,		/* Control signal for the Mux from ALU to register file */
-	input mem_sel, 		/* Memory selection: 0=ROM, 1=RAM*/
-	input [3:0]ALUControl, 			//@Control signal: Selects addition operation (010b)
-	input [1:0]sel_muxALU_srcB 		//@Control signal: allows to select the operand for getting srcB number
+	input clk, 					/* clk signal */
+	input reset, 				/* async signal to reset */	
+	input [2:0]count_state 		/* 7 states */
+	
 );
 
 /***************************************************************
 Signals for Memory unit
 ***************************************************************/
 wire [DATA_WIDTH-1 : 0] B;	//data from Reg file RD2 to 'mux4_1_forALU'
-wire  [(DATA_WIDTH-1):0]Mmemory_output;
-
+wire [DATA_WIDTH-1 : 0] A;	//data from Reg file RD1 to MUX to ALU
+wire [DATA_WIDTH-1:0]Mmemory_output;
+wire MemWrite_wire;			//@Control signal: Write enable for the memory unit
+wire IRWrite_wire;			//@Control signal: Enable signal for FF to let the instruction pass to 'Prepare inst module'
+wire DataWrite_wire;		//@Control signal: Enable signal for FF to let the data pass to Mux to 'Register File'
+wire mem_sel_wire; 		    //@Control signal: Memory selection: 0=ROM, 1=RAM
+wire IorD_wire;				//@Control signal: Instruction or Data selection. 0=from PC, 1=from ALU
 /***************************************************************
 Signals for ALU unit
 ***************************************************************/
-//wire [1:0]sel_muxALU_srcB; 		//@Control signal: allows to select the operand for getting srcB number
-wire zero;						//zero flag
-wire [DATA_WIDTH-1:0]shifted2;	//4th input for ALU: shifted by 2 data
-wire [DATA_WIDTH-1:0]SrcB;		//output of ALU
-//wire [3:0]ALUControl; 			//@Control signal: Selects addition operation (010b)
-wire [DATA_WIDTH-1 : 0]ALUResult;
-/***************************************************************
-Signals for PC 
-***************************************************************/
 
+wire zero;							//zero flag
+wire [DATA_WIDTH-1:0]shifted2;		//4th input for ALU: shifted by 2 data
+wire [DATA_WIDTH-1:0] SrcA;			//input 0 of ALU
+wire [DATA_WIDTH-1:0] SrcB;			//input 1 of ALU
+wire [3:0]ALUControl_wire; 			//@Control signal: Selects addition operation (010b)
+wire [DATA_WIDTH-1 : 0]ALUResult;	//Output result of ALU unit
+wire [DATA_WIDTH-1 : 0]ALUOut;		//Registerd output of ALU
+wire [1:0]sel_muxALU_srcB; 			//@Control signal: allows to select the operand for getting srcB number on mux 'Mux4_1_forALU'
+wire ALUSrcA_wire;					//@Control signal: allow to select the SrcA source. 0=PC, 1=RD1
+wire ALUresult_en_wire;				//@Control signal: enables the FF at ALUout
 /***************************************************************
 Signals for Register File
 ***************************************************************/
 wire [DATA_WIDTH-1 : 0] RD1; 
 wire [DATA_WIDTH-1 : 0] RD2;
-//wire MemtoReg;		//@Control signal
-wire [DATA_WIDTH-1:0]datatoWD3;
+wire RegDst_wire;					/*@Control signal: for Write reg in Register File */
+wire MemtoReg_wire;					/*@Control signal: for the Mux from ALU to Register File */
+wire RegWrite_wire;					/*@Control signal: Write enable for register file unit*/
+wire [DATA_WIDTH-1:0]datatoWD3;   	/* Conexion from MUX to select a Data from Memory or from ALU. 0=ALU,1=Memory */
+wire [DATA_WIDTH-1:0]DataMemory;	/* Output of FF from Data Memory  */	
+wire RDx_FF_en_wire;				/*@Control signal: to enable FF to MUX to ALU */
 /***************************************************************
 Signals for Sign Extend module
 ***************************************************************/
@@ -56,21 +59,61 @@ wire [DATA_WIDTH-1:0] sign_extended_out;
 /***************************************************************
 Signals for Address preparation module
 ***************************************************************/
-//wire [DATA_WIDTH-1:0]Instruction_fetched; 	//signal from FF to Register files to indicate instruction
-wire [5:0] opcode;							//Opcode field of the instruction
+wire [DATA_WIDTH-1:0]Instruction_fetched; 	//signal from FF to Register files to indicate instruction
+wire [5 :0 ]opcode_wire;							//Opcode field of the instruction
+wire [4 : 0]rs_wire;		 			//source 1	(R-I type)
+wire [4 : 0]rt_wire;		 			//source 2	(R-I type)
+wire [4 : 0]rt_im_wire;				//Destination: 20:16 bit (I type)
+wire [4 : 0]rd_wire;		  			//Destination: 15:11 bit (R type)
+wire [4 : 0]shamt_wire;				//shamt field (R type)
+wire [5 : 0]funct_wire;				//select the function
+wire [15: 0]immediate_data_wire;		//immediate field (I type)
+wire [25: 0]address_j_wire;			//address field for (J type)
 
-wire [4 : 0]rs;		 			//source 1	(R-I type)
-wire [4 : 0]rt;		 			//source 2	(R-I type)
-wire [4 : 0]rt_im;				//Destination: 20:16 bit (I type)
-wire [4 : 0]rd;		  			//Destination: 15:11 bit (R type)
-wire [4 : 0]shamt;				//shamt field (R type)
-wire [5: 0]funct;				//select the function
-wire [15: 0]immediate_data;		//immediate field (I type)
-wire [25:0] address_j;			//address field for (J type)
 /***************************************************************
-Control signals: these go to the control unit
+Signals for A3 Destination mux
 ***************************************************************/
+wire [4:0]mux_A3out;
+/***************************************************************
+Signals for Branch instructions
+***************************************************************/
+wire PCWrite_wire;
+wire Branch_wire;
 
+/***************************************************************
+Signals to update Program Counter
+***************************************************************/
+wire PCSrc_wire;					/* Signal for a mux to select the source of PC */
+wire PC_current;					/* Current Program counter */
+wire [DATA_WIDTH-1:0] PC_source;	/* signal from mux to PC register */
+
+//####################     Control unit   #######################
+ControlUnit CtrlUnit(
+    /* Inputs */
+    .clk(clk), 						//clk signal
+	.reset(reset), 					//async signal to reset 	
+    .count_state(count_state), 		//7 states
+    .Opcode(opcode_wire),
+    .Funct(funct_wire),
+	.Zero(zero),
+    /* Outputs */
+    .IorD(IorD_wire),
+    .MemWrite(MemWrite_wire),
+    .IRWrite(IRWrite_wire),
+    .RegDst(RegDst_wire),
+    .MemtoReg(MemtoReg_wire),
+    .PCWrite(PCWrite_wire),
+    .Branch(Branch_wire),
+    .PCSrc(PCSrc_wire),
+    .ALUControl(ALUControl_wire),
+    .ALUSrcB(sel_muxALU_srcB),
+    .ALUSrcA(ALUSrcA_wire),
+    .RegWrite(RegWrite_wire),
+    .Mem_select(mem_sel_wire),		//@Control signal: Memory selection: 0=ROM, 1=RAM
+	.DataWrite(DataWrite_wire),
+	.RDx_FF_en(RDx_FF_en_wire),
+	.PC_En(PC_En_wire)	
+);
 
 //####################     Address preparation   #######################
 addres_preparation add_prep
@@ -78,35 +121,88 @@ addres_preparation add_prep
 	/* Input */
 	.Mmemory_output(Instruction_fetched),	//rom fetched instruction content
 	/* Output */
-	.opcode(opcode),  				//Opcode  value
-	.funct(funct),    				//function value
-	.rs(rs),		 				//source 1	(R-I type)		
-	.rt(rt),		 				//source 2	(R-I type)		
-	.rt_im(rt_im),					//Destination: 20:16 bit (I type)		
-	.rd(rd),						//Destination: 15:11 bit (R type)		
-	.shamt(shamt),					//shamt field (R type)	
-	.immediate_data(immediate_data),//immediate field (I type)	
-	.address_j(address_j)			//address field for (J type)	
+	.opcode(opcode_wire),  			//Opcode  value
+	.funct(funct_wire),    				//function value
+	.rs(rs_wire),		 				//source 1	(R-I type)		
+	.rt(rt_wire),		 				//source 2	(R-I type)		
+	.rd(rd_wire),						//Destination: 15:11 bit (R type)		
+	.shamt(shamt_wire),					//shamt field (R type)	
+	.immediate_data(immediate_data_wire),//immediate field (I type)	
+	.address_j(address_j_wire)			//address field for (J type)	
+);
+//#################### Register for Program Counter #################
+Register#(
+	.WORD_LENGTH(DATA_WIDTH)
+)ProgramCounter_Reg
+(		
+	.clk(clk),
+	.reset(reset),
+	.enable(PC_En_wire),
+	.Data_Input(PC_source), 	//This comes from the ALU Result after MUX_for_PC_source
+	.Data_Output(PC_current)	//output Program counter update
+);
+//###############   FF, from PC to Memory Unit     ##################
+mux2to1#(.Nbit(DATA_WIDTH))
+MUX_for_PC
+(
+	.mux_sel(IorD_wire),				//@Control signal: Instruction or Data selection. 1=from ALU
+	.data1(PC_current), 			//0=Comes from 'PC_Reg'
+	.data2(ALUOut), 					//1=From ALUOut signal 
+	.Data_out(mux_address_Data_out) //this have the Address for Memory input
 );
 
 
-//####################   Memory Unit     ####################
+//####################   Memory Unit     ########################
 MemoryUnit #(
 	.DATA_WIDTH(DATA_WIDTH), 
 	.ADDR_WIDTH(ADDR_WIDTH)//bits to address the elements
 )MemoryMIPS
 (
     /* inputs */
-	.addr(ALUResult),				//Address to read from ROM
-	.wdata(RD2),		            //data to write to RAM
-	.we(MemWrite),					//@Control signal: enable
+	.addr(ALUOut),					//Address to read from ROM
+	.wdata(B),			            //data to write to RAM
+	.we(MemWrite_wire),				//@Control signal: enable
 	.clk(clk), 						//clock signal
-	.mem_sel(mem_sel),				//@Control signal: memory selector: 0=ROM, 1=RAM
+	.mem_sel(mem_sel_wire),			//@Control signal: memory selector: 0=ROM, 1=RAM
     /* output */
 	.q(Mmemory_output)
 );
 
-////####################  Register File  ###################
+////################  Registers for Inst and Data ##############
+Register#(
+	.WORD_LENGTH(DATA_WIDTH)
+)Reg_forInstruction 
+(		
+	.clk(clk),
+	.reset(reset),
+	.enable(IRWrite_wire),
+	.Data_Input(Mmemory_output),//output from MEMORY (ROM)
+	.Data_Output(Instruction_fetched)//output Program counter update
+);
+Register#(
+	.WORD_LENGTH(DATA_WIDTH)
+)Reg_forData 
+(		
+	.clk(clk),
+	.reset(reset),
+	.enable(DataWrite_wire),			//controls the flip flop for data (RAM to reg)
+	.Data_Input(Mmemory_output), 		//output from MEMORY (RAM)
+	.Data_Output(DataMemory)			//Output of FF to Mux to WD3 (reg file)
+);
+
+//#################### A3 Destination Mux ######################
+mux2to1
+#(
+	.Nbit(3'd5)
+)mux_A3_destination
+(
+	.mux_sel(RegDst_wire),		/* 1= R type (rd), 0= I type (rt) */
+	.data1(rt_im_wire),
+	.data2(rd_wire),
+	.Data_out(mux_A3out)
+);
+
+////####################  Register File  #######################
 Register_File #(
 	.WORD_LENGTH(DATA_WIDTH),	
 	.NBITS(5)
@@ -115,24 +211,67 @@ Register_File #(
 	/* Inputs */
 	.clk(clk),
 	.reset(reset),
-	.Read_Reg1(rs),				//Rs-> 25:21
-	.Read_Reg2(rt), 			//Rt-> 20:16
-	.Write_Reg(rd),				//(A3)Register destination; bits I->20:16 ; R->15:11
+	.Read_Reg1(rs_wire),		//It'll always be 'Rs'-> 25:21. 
+	.Read_Reg2(rt_im), 			//It'll always be 'Rt'-> 20:16
+	.Write_Reg(mux_A3out),		//(A3)Register destination; bits I->20:16 ; R->15:11
 	.Write_Data(datatoWD3),  	//(WD3) data to write 
-	.Write(RegWrite),			//@Control Signal:(WE3) enable signal
+	.Write(RegWrite_wire),		//@Control Signal:(WE3) enable signal
 	/* Outputs */
 	.Read_Data1(RD1),
 	.Read_Data2(RD2)	
 );
 
-//####################  Sign extend Module  ###############
+//##############  Mux from Memory to Register File ############
+mux2to1 #(
+	.Nbit(DATA_WIDTH)
+)MUX_to_WriteData_RegFile
+(
+	.mux_sel(MemtoReg_wire),			//@Control signal:  0=ALU , 1=Memory
+	.data1(ALUOut),		 			//From ALU result
+	.data2(DataMemory),				//From Memory: Read data
+	.Data_out(datatoWD3) 				//This have the Address for Memory input
+);
 
+//####################  Sign extend Module  ###############
 SignExtend_module signExt
 (
-	.immediate(immediate_data),
+	.immediate(immediate_data_wire),
 	.extended_sign_out(sign_extended_out)
 );
 
+////#################### FF, from RD1 to ALU  #######################
+Register#(
+	.WORD_LENGTH(DATA_WIDTH)
+)FromRegtoSrcA_FF
+(		
+	.clk(clk),
+	.reset(reset),
+	.enable(RDx_FF_en_wire),//controls the flip flop from Reg to SrcA ALU
+	.Data_Input(RD1), 
+	.Data_Output(A)		
+);
+////#################### FF, from RD2 to Mux_4_1_forALU #############
+Register#(
+	.WORD_LENGTH(DATA_WIDTH)
+)FromRegtoSrcB_FF 
+(		
+	.clk(clk),
+	.reset(reset),
+	.enable(RDx_FF_en_wire),//@Control signal: control the FF from Reg to SrcB ALU
+	.Data_Input(RD2), 
+	.Data_Output(B)		
+);
+
+//####################   MUX to update SrcA  ########################
+mux2to1#(
+	.Nbit(DATA_WIDTH)
+)MUX_to_updatePC
+(
+	.mux_sel(ALUSrcA_wire),		//@Control signal: mux selector, 0= PC,1 =RD1
+	.data1(PC_current), 		//comes from PC Reg
+	.data2(A), 					//RD1 output from Reg File
+	.Data_out(SrcA) 			//Input 1 of ALU
+);
 
 //##########  Mux from Register File to ALU (srcB) ############
 mux4to1 #(
@@ -141,23 +280,12 @@ mux4to1 #(
 (
 	.mux_sel(sel_muxALU_srcB),
 	/* 32 bit DATA inputs */
-	.data1(RD2),					//From Register File RD2
+	.data1(B),					//From Register File RD2
 	.data2(4), 						//Sum 4 for PC+4
 	.data3(sign_extended_out),		//For Sign extended module output
-	.data4(shifted2), 					//This should be shift<<2
+	.data4(sign_extended_out), 					//This should be shift<<2
 	/* 32 bit DATA outputs */
 	.Data_out(SrcB)					//output of Mux
-);
-
-//##############  Mux from Memory to Register File ############
-mux2to1 #(
-	.Nbit(DATA_WIDTH)
-)MUX_to_updateRegFile
-(
-	.mux_sel(MemtoReg),			//@Control signal:  0=ALU , 1=Memory
-	.data1(ALUResult), 			//From ALU result
-	.data2(Mmemory_output),		//From Memory: Read data
-	.Data_out(datatoWD3) 			//This have the Address for Memory input
 );
 
 //####################        ALU   #######################
@@ -166,15 +294,34 @@ ALU #(
 )alu_unit
 (
 	/* inputs */	
-	.dataA(RD1),				//From RD1 		 , input 1
-	.dataB(SrcB),				//From Mux 4 to 1, input 2 
-	.control(ALUControl),		//@Control signal
+	.dataA(SrcA),					//From MUX_to_updatePC 	, input 1
+	.dataB(SrcB),					//From Mux 4 to 1		, input 2 
+	.control(ALUControl_wire),		//@Control signal
 	/* outputs */
-	.carry(zero),			//Zero signal
-	.dataC(ALUResult) 		//Result	
+	.carry(zero),					//Zero signal
+	.dataC(ALUResult) 				//Result	
 );
 
+//####################   ALU Flip flop to the ALUOut ####################
+Register#(
+	.WORD_LENGTH(DATA_WIDTH)
+)Mem_forALUOut
+(		
+	.clk(clk),
+	.reset(reset),
+	.enable(ALUresult_en_wire),
+	.Data_Input(ALUResult), //This comes from the ALU Result after MUX
+	.Data_Output(ALUOut)//output Program counter update
+);
 
-
+mux2to1#(
+	.Nbit(DATA_WIDTH)
+)MUX_for_PC_source
+(
+	.mux_sel(PCSrc_wire),
+	.data1(ALUResult), //comes from PC Reg
+	.data2(ALUOut), //from ALUout signal 
+	.Data_out(PC_source) //this have the Address for Memory input
+);
 
 endmodule
