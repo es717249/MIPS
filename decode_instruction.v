@@ -11,8 +11,9 @@ module decode_instruction
 	output flag_R_type,				//R type =1
 	output flag_I_type,				//I type =1
 	output flag_J_type,				//J type =1
-	output [1:0]mux4selector,		//allows to select the operand for getting srcB number
-	output controlSrcA)				//to control the source data for srcA
+	output [1:0]mux4selector		//allows to select the operand for getting srcB number
+	//output controlSrcA
+	)				//to control the source data for srcA
 ;
 
 reg [1:0]mux4selector_reg;
@@ -23,7 +24,7 @@ reg flag_lw_reg;
 reg flag_R_type_reg;
 reg flag_I_type_reg;
 reg flag_J_type_reg;
-reg controlSrcA_reg;
+/* reg controlSrcA_reg; */
 
 
 
@@ -44,7 +45,7 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=1;	//destination will be rd
 				ALUControl_reg=4'd8;			//operation Shift to left				
 				mux4selector_reg=2'd0;
-				controlSrcA_reg =1;
+				/* controlSrcA_reg =1; */
 				//flag_lw_reg=1'b0;
 				//flag_sw_reg=1'b0;
 			end
@@ -54,7 +55,7 @@ always @(opcode_reg,funct_reg) begin
 				ALUControl_reg=4'd6;			//operation OR				
 				/* mux4selector_reg=2'd2; */
 				mux4selector_reg=2'd0;
-				controlSrcA_reg =1;
+				/* controlSrcA_reg =1; */
 				//flag_lw_reg=1'b0;
 				//flag_sw_reg=1'b0;
 			end
@@ -63,7 +64,7 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=1;	//destination will be rd
 				ALUControl_reg=4'd2;			//operation OR				
 				mux4selector_reg=2'd0;
-				controlSrcA_reg =1;
+				/* controlSrcA_reg =1; */
 				//flag_lw_reg=1'b0;
 				//flag_sw_reg=1'b0;
 			end
@@ -72,7 +73,7 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=1;	//destination will be rd
 				ALUControl_reg=4'd2;			//operation add 				
 				mux4selector_reg=2'd0;
-				controlSrcA_reg =1;
+				/* controlSrcA_reg =1; */
 				//flag_lw_reg=1'b0;
 				//flag_sw_reg=1'b0;
 			end
@@ -92,7 +93,7 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=0;	//destination will be rt
 				ALUControl_reg=4'd2;			//operation add 				
 				mux4selector_reg=2'd2;
-				controlSrcA_reg =0;
+				/* controlSrcA_reg =0; */
 				flag_lw_reg=1'b0;
 				flag_sw_reg=1'b0;
 			end
@@ -101,7 +102,7 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=0;	//destination will be rt
 				ALUControl_reg=4'd5;			//operation and 	
 				mux4selector_reg=2'd2;	
-				controlSrcA_reg =0;		
+				/* controlSrcA_reg =0; */		
 				flag_lw_reg=1'b0;
 				flag_sw_reg=1'b0;
 			end
@@ -113,7 +114,7 @@ always @(opcode_reg,funct_reg) begin
 				flag_lw_reg=1'b0;
 				flag_sw_reg=1'b1;	
 				mux4selector_reg=2'd0;	
-				controlSrcA_reg =0;
+				/* controlSrcA_reg =0; */
 			end
 			6'b100011: //lw	- 0x23
 			begin
@@ -122,7 +123,7 @@ always @(opcode_reg,funct_reg) begin
 				flag_lw_reg=1'b1;
 				flag_sw_reg=1'b0;		
 				mux4selector_reg=2'd0;	
-				controlSrcA_reg =0;	
+				/* controlSrcA_reg =0; */	
 			end
 			6'b000100: //beq - 0x04
 			begin
@@ -140,7 +141,7 @@ always @(opcode_reg,funct_reg) begin
 				flag_lw_reg=1'b0;
 				flag_sw_reg=1'b0;	
 				mux4selector_reg=2'd0;	
-				controlSrcA_reg =0;		
+				/* controlSrcA_reg =0;		 */
 			end
 		endcase 
 	end 
@@ -151,7 +152,7 @@ assign ALUControl= ALUControl_reg ;
 assign flag_lw = flag_lw_reg;
 assign flag_sw = flag_sw_reg ;
 assign mux4selector= mux4selector_reg;
-assign controlSrcA =controlSrcA_reg ;
+//assign controlSrcA =controlSrcA_reg ;
 assign flag_R_type = flag_R_type_reg;
 assign flag_I_type = flag_I_type_reg;
 assign flag_J_type = flag_J_type_reg;

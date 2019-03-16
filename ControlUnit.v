@@ -4,18 +4,21 @@ module ControlUnit
 	parameter IDLE=0,
 	parameter FETCH=1,
 	parameter DECODE=2,
-	parameter EXECUTE=3,	
+	parameter EXECUTE=3,	    
 	parameter WRITE_BACKTOREG=4,
 	parameter STORE=5,
 	parameter LOAD=6,
-    parameter BRANCH=7
+    parameter BRANCH=7,
+    parameter DETERMINE_EXECUTION= 8,
+    parameter GET_EFFECTIVE_ADDR=9,
+    parameter STORE_OR_LOAD=10
 	//parameter SEND_UART=7
 )
 (
     /* Inputs */
     input clk, //clk signal
 	input reset, //async signal to reset 	
-    input [2:0]count_state, //7 states
+    input [3:0]count_state, //7 states
     input [5:0]Opcode,
     input [5:0]Funct,
     input Zero,
@@ -40,7 +43,7 @@ module ControlUnit
 
 //###################### Variables ########################
 
-reg [2:0]state;     //8 available states
+reg [3:0]state;     //8 available states
 wire AND1_wire;
 wire flag_sw_wire;
 wire flag_lw_wire;
@@ -52,21 +55,43 @@ wire flag_R_type_wire;
 wire flag_I_type_wire;
 wire flag_J_type_wire;
 
-reg PC_En_reg;
 reg IorD_reg;
 reg MemWrite_reg;
-reg Mem_select_reg;
 reg IRWrite_reg;
-reg DataWrite_reg;
-reg MemtoReg_reg;
 reg RegDst_reg;
-reg RegWrite_reg;
-reg RDx_FF_en_reg;
+reg MemtoReg_reg;
+reg PCWrite_reg;
+reg Branch_reg;
+reg PCSrc_reg;
 reg [3:0]ALUControl_reg;
 reg [1:0]ALUSrcB_reg;
 reg ALUSrcA_reg;
+reg RegWrite_reg;
+reg Mem_select_reg;
+reg DataWrite_reg;
+reg RDx_FF_en_reg;
 reg ALUresult_en_reg;
-reg PCSrc_reg;
+reg PC_En_reg;
+
+
+
+assign IorD = IorD_reg;
+assign MemWrite = MemWrite_reg;
+assign IRWrite = IRWrite_reg;
+assign RegDst = RegDst_reg;
+assign MemtoReg = MemtoReg_reg;
+assign PCWrite = PCWrite_reg;
+assign Branch = Branch_reg;
+assign PCSrc = PCSrc_reg;
+
+assign ALUSrcB = ALUSrcB_reg;
+assign ALUSrcA = ALUSrcA_reg;
+assign RegWrite = RegWrite_reg;
+assign Mem_select = Mem_select_reg;
+assign DataWrite = DataWrite_reg;
+assign RDx_FF_en = RDx_FF_en_reg;
+assign ALUresult_en = ALUresult_en_reg;
+
 
 //####################     Assignations   #######################
 assign AND1_wire = Branch & Zero;
@@ -85,8 +110,8 @@ decode_instruction decoder_module
     .flag_R_type(flag_R_type_wire), 
     .flag_I_type(flag_I_type_wire), 
     .flag_J_type(flag_J_type_wire),
-	.mux4selector(ALUSrcB_wire),    //allows to select the operand for getting srcB number
-	.controlSrcA(controlSrcA)       //to control the source data for srcA
+	.mux4selector(ALUSrcB_wire)    //allows to select the operand for getting srcB number
+	//.controlSrcA(controlSrcA_wire)       //to control the source data for srcA
 );
 
 
@@ -126,7 +151,7 @@ always @(posedge clk or negedge reset) begin
                     state <= GET_EFFECTIVE_ADDR;        /* Get effective address. This is common for sw and lw */
                 end
                 else if(flag_J_type_wire==1'b1)begin
-                    state <= BRANCH;
+                    state <= JUMP;
                 end  
                 else begin
                     state <= FETCH;     /* Should not reach this point */
@@ -165,7 +190,6 @@ always @(posedge clk or negedge reset) begin
                     state <= LOAD;      /* Read from memory to reg */
                 end
             end
-            end
             STORE:      /* Save from a register to memory. Write to memory from reg  */
             begin
                 if(count_state==3'd1)
@@ -186,6 +210,18 @@ always @(posedge clk or negedge reset) begin
                     state <= FETCH;
                 else if(state == 3'd3)
                     state <=BRANCH;
+            end
+            JUMP:
+            begin
+                if(count_state==3'd1)
+                    state <= FETCH;
+                else if(state == 3'd3)
+                    state <=JUMP;
+            end 
+            default:
+				begin
+                state<=IDLE;
+            
             end
         endcase
     end 
@@ -253,12 +289,12 @@ always@(state)begin
             ALUresult_en_reg=0;     /* not relevant */
             PCSrc_reg       =0;     /* not relevant */
         end
-        DETERMINE_EXECUTION:
-        begin
-        end
-        STORE_OR_LOAD:
-        begin
-        end 
+        //DETERMINE_EXECUTION:
+        //begin
+        //end
+        //STORE_OR_LOAD:
+        //begin
+        //end 
         EXECUTE:
         begin
             /*  Ya se tienen los datos provenientes del Reg File (RD1 y RD2)
@@ -293,7 +329,7 @@ always@(state)begin
             IRWrite_reg     =0; /* not relevant */
             DataWrite_reg   =0; /* not relevant */
             MemtoReg_reg    =0;	/* This will select the correct data for WD3; 0=ALUout*/
-            RegDst_reg      =destination_indicator_wire /* Mux selector for A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
+            RegDst_reg      =destination_indicator_wire; /* Mux selector for A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
             RegWrite_reg    =1; /* Enables writing on Register file*/
             RDx_FF_en_reg   =0; /* not relevant */
             ALUSrcB_reg     =0; /* not relevant */
@@ -362,10 +398,10 @@ always@(state)begin
             PCSrc_reg       =0; /* not relevant */
 
         end
-        BRANCH:
-        begin
-            
-        end
+//        BRANCH:
+//        begin
+//            
+//        end
     endcase
 end 
 

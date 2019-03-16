@@ -40,7 +40,7 @@ reg [WORD_LENGTH:0]compl_B;
 				
 wire [WORD_LENGTH-1:0] tmp_shift2;
 
-assign tmp_shift2 = dataB <<2;
+assign tmp_shift2 = dataB <<2;		/* immediate value x 4 */
 
 always@(*)begin 
 
@@ -121,7 +121,7 @@ always@(*)begin
 		4'b1010:
 		begin
 			//corrimiento <<2 y suma
-			result_reg= tmp_shift2 + dataB;
+			result_reg= tmp_shift2 + 4;
 			carry_reg=(result_reg & mask)?1'b1:1'b0;
 		end
 		default:

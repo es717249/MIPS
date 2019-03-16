@@ -63,7 +63,6 @@ wire [DATA_WIDTH-1:0]Instruction_fetched; 	//signal from FF to Register files to
 wire [5 :0 ]opcode_wire;							//Opcode field of the instruction
 wire [4 : 0]rs_wire;		 			//source 1	(R-I type)
 wire [4 : 0]rt_wire;		 			//source 2	(R-I type)
-wire [4 : 0]rt_im_wire;				//Destination: 20:16 bit (I type)
 wire [4 : 0]rd_wire;		  			//Destination: 15:11 bit (R type)
 wire [4 : 0]shamt_wire;				//shamt field (R type)
 wire [5 : 0]funct_wire;				//select the function
@@ -86,7 +85,8 @@ Signals to update Program Counter
 wire PCSrc_wire;					/* Signal for a mux to select the source of PC */
 wire PC_current;					/* Current Program counter */
 wire [DATA_WIDTH-1:0] PC_source;	/* signal from mux to PC register */
-
+wire PC_En_wire;
+wire [DATA_WIDTH-1:0] mux_address_Data_out;
 //####################     Control unit   #######################
 ControlUnit CtrlUnit(
     /* Inputs */
@@ -212,7 +212,7 @@ Register_File #(
 	.clk(clk),
 	.reset(reset),
 	.Read_Reg1(rs_wire),		//It'll always be 'Rs'-> 25:21. 
-	.Read_Reg2(rt_im), 			//It'll always be 'Rt'-> 20:16
+	.Read_Reg2(rt_wire), 			//It'll always be 'Rt'-> 20:16
 	.Write_Reg(mux_A3out),		//(A3)Register destination; bits I->20:16 ; R->15:11
 	.Write_Data(datatoWD3),  	//(WD3) data to write 
 	.Write(RegWrite_wire),		//@Control Signal:(WE3) enable signal
