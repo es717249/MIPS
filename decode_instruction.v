@@ -45,37 +45,24 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=1;	//destination will be rd
 				ALUControl_reg=4'd8;			//operation Shift to left				
 				mux4selector_reg=2'd0;
-				/* controlSrcA_reg =1; */
-				//flag_lw_reg=1'b0;
-				//flag_sw_reg=1'b0;
 			end
 			6'h25: ///or
 			begin
 				destination_reg_indicator=1;	//destination will be rd
 				ALUControl_reg=4'd6;			//operation OR				
-				/* mux4selector_reg=2'd2; */
 				mux4selector_reg=2'd0;
-				/* controlSrcA_reg =1; */
-				//flag_lw_reg=1'b0;
-				//flag_sw_reg=1'b0;
 			end
 			6'h20: //add
 			begin
 				destination_reg_indicator=1;	//destination will be rd
 				ALUControl_reg=4'd2;			//operation OR				
 				mux4selector_reg=2'd0;
-				/* controlSrcA_reg =1; */
-				//flag_lw_reg=1'b0;
-				//flag_sw_reg=1'b0;
 			end
 			default:
 			begin
 				destination_reg_indicator=1;	//destination will be rd
 				ALUControl_reg=4'd2;			//operation add 				
 				mux4selector_reg=2'd0;
-				/* controlSrcA_reg =1; */
-				//flag_lw_reg=1'b0;
-				//flag_sw_reg=1'b0;
 			end
 		endcase
 
@@ -119,7 +106,7 @@ always @(opcode_reg,funct_reg) begin
 			6'b100011: //lw	- 0x23
 			begin
 				destination_reg_indicator=0;	//destination will be rt
-				ALUControl_reg=4'b1010;			//do nothing on ALU
+				ALUControl_reg=4'b1010;			//
 				flag_lw_reg=1'b1;
 				flag_sw_reg=1'b0;		
 				mux4selector_reg=2'd0;	
@@ -127,7 +114,11 @@ always @(opcode_reg,funct_reg) begin
 			end
 			6'b000100: //beq - 0x04
 			begin
-			
+				destination_reg_indicator=0;	//destination will be rt
+				ALUControl_reg=4'b1010;			//	
+				flag_lw_reg=1'b0;
+				flag_sw_reg=1'b0;		
+				mux4selector_reg=2'd0;	
 			end 
 			6'b000101: //bne
 			begin 

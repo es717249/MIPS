@@ -111,7 +111,6 @@ decode_instruction decoder_module
     .flag_I_type(flag_I_type_wire), 
     .flag_J_type(flag_J_type_wire),
 	.mux4selector(ALUSrcB_wire)    //allows to select the operand for getting srcB number
-	//.controlSrcA(controlSrcA_wire)       //to control the source data for srcA
 );
 
 
@@ -148,7 +147,12 @@ always @(posedge clk or negedge reset) begin
                     state <= EXECUTE;                   /* Go to execute */
                 end 
                 else if(flag_I_type_wire ==1'b1)begin   /* Execute an I type operation */                    
-                    state <= GET_EFFECTIVE_ADDR;        /* Get effective address. This is common for sw and lw */
+                    /* Check for the opcode */
+                    if(Opcode == 6'b000100)begin    /* Beq operation */
+                        state <= BRANCH_EQUAL_GET_ADDR;
+                    end else begin
+                        state <= GET_EFFECTIVE_ADDR;        /* Get effective address. This is common for sw and lw */
+                    end
                 end
                 else if(flag_J_type_wire==1'b1)begin
                     state <= JUMP;
@@ -204,13 +208,17 @@ always @(posedge clk or negedge reset) begin
                 else if(count_state == 3'd4)
                     state <=LOAD;
             end
-            BRANCH:         /* count_state = 3 */
+            BRANCH_EQUAL_GET_ADDR:         /* count_state = 3 */
             begin
-                if(count_state==3'd1)
-                    state <= FETCH;
+                if(count_state==3'd4)
+                    state <= BRANCH_EQUAL_COMPARE;
                 else if(state == 3'd3)
-                    state <=BRANCH;
+                    state <=BRANCH_EQUAL_GET_ADDR;
             end
+            BRANCH_EQUAL_COMPARE:
+            begin
+
+            end 
             JUMP:
             begin
                 if(count_state==3'd1)
@@ -246,6 +254,8 @@ always@(state)begin
             ALUSrcA_reg     =0; /* Allows to select either PC (0) or data from A (1) */	
             ALUresult_en_reg=0; /* Allows writing to ALU register*/
             PCSrc_reg       =0; /* Allows to select the PC source, 0=ALUResult, 1=ALUOut*/
+            Branch_reg      =0; /* not relevant */
+            PCWrite_reg     =0; /* not relevant */
         end
         FETCH:
         begin
@@ -266,6 +276,8 @@ always@(state)begin
             ALUSrcA_reg     =0;     /* Allows to select either PC (0) */	
             ALUresult_en_reg=0;     /* Allows writing to ALU register*/
             PCSrc_reg       =0;     /* Allows to select the PC source, 0=ALUResult*/
+            Branch_reg      =0; /* not relevant */
+            PCWrite_reg     =0; /* not relevant */
         end
         DECODE:
         begin
@@ -288,6 +300,8 @@ always@(state)begin
             ALUSrcA_reg     =1;     /* not relevant */
             ALUresult_en_reg=0;     /* not relevant */
             PCSrc_reg       =0;     /* not relevant */
+            Branch_reg      =0; /* not relevant */
+            PCWrite_reg     =0; /* not relevant */
         end
         //DETERMINE_EXECUTION:
         //begin
@@ -316,7 +330,9 @@ always@(state)begin
             ALUControl_reg  =ALUControl; /* Selects ALU operation */
             ALUSrcA_reg     =1; /* Select data from A , RD1 */	
             ALUresult_en_reg=1; /* allows to save on the next cycle the ALU result*/
-            PCSrc_reg       =0; /* not relevant*/
+            PCSrc_reg       =0; /* not relevant */
+            Branch_reg      =0; /* not relevant */
+            PCWrite_reg     =0; /* not relevant */
         end
         WRITE_BACKTOREG:
         begin
@@ -337,6 +353,8 @@ always@(state)begin
             ALUSrcA_reg     =0; /* not relevant */	
             ALUresult_en_reg=0; /* not relevant */
             PCSrc_reg       =0; /* not relevant */          
+            Branch_reg      =0; /* not relevant */
+            PCWrite_reg     =0; /* not relevant */
         end
         GET_EFFECTIVE_ADDR:     /* For sw operation */
         begin
@@ -360,6 +378,8 @@ always@(state)begin
             ALUSrcA_reg     =1; /* Select data from A (1) */	
             ALUresult_en_reg=1; /* Allows writing to ALU register*/
             PCSrc_reg       =0; /* not relevant */
+            Branch_reg      =0; /* not relevant */
+            PCWrite_reg     =0; /* not relevant */
         end 
         STORE:
         begin
@@ -378,6 +398,8 @@ always@(state)begin
             ALUSrcA_reg     =0; /* not relevant */	
             ALUresult_en_reg=0; /* not relevant */
             PCSrc_reg       =0; /* not relevant */
+            Branch_reg      =0; /* not relevant */
+            PCWrite_reg     =0; /* not relevant */
         end
         LOAD:
         begin
@@ -396,12 +418,50 @@ always@(state)begin
             ALUSrcA_reg     =0; /* not relevant */
             ALUresult_en_reg=0; /* not relevant */
             PCSrc_reg       =0; /* not relevant */
+            Branch_reg      =0; /* not relevant */
+            PCWrite_reg     =0; /* not relevant */
 
         end
-//        BRANCH:
-//        begin
-//            
-//        end
+        BRANCH_EQUAL_GET_ADDR:
+        begin
+            PC_En_reg       =0; /* not relevant */
+            IorD_reg        =0; /* Selects the address: 0= program counter(fetch), 1=load operation*/
+            MemWrite_reg    =0; /* not relevant */
+            Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
+            IRWrite_reg     =0; /* not relevant */
+            DataWrite_reg   =0; /* not relevant */
+            MemtoReg_reg    =0;	/* not relevant */
+            RegDst_reg      =0; /* not relevant */
+            RegWrite_reg    =0; /* not relevant */
+            RDx_FF_en_reg   =0; /* not relevant */
+            ALUSrcB_reg     =4'd3; /* Allows to select the operand (on Mux 4:1) for getting srcB number */
+            ALUControl_reg  =4'd2; /* Selects addition operation */
+            ALUSrcA_reg     =0; /* Allows to select either PC (0) or data from A (1) */	
+            ALUresult_en_reg=1; /* Allows writing to ALU register*/
+            PCSrc_reg       =0; /* Allows to select the PC source, 0=ALUResult, 1=ALUOut*/            
+            Branch_reg      =0; /* Prepare signal for branch (and operation) */
+            PCWrite_reg     =0; /* Signal to enable updating Program Counter */
+        end
+        BRANCH_EQUAL_COMPARE:
+        begin 
+            PC_En_reg       =0; /* Control signal for the PC flip flop */
+            IorD_reg        =0; /* Selects the address: 0= program counter(fetch)*/
+            MemWrite_reg    =0; /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
+            Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
+            IRWrite_reg     =0; /* Enable signal for Instruction Flip flop (ROM to Reg File)*/
+            DataWrite_reg   =0; /* Controls the flip flop for data (RAM to Reg File)*/
+            MemtoReg_reg    =0;	/* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
+            RegDst_reg      =0; /* Mux selector for A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
+            RegWrite_reg    =0; /* Enables writing on Register file*/
+            RDx_FF_en_reg   =1; /* Controls the flip flop from RD1 to SrcA ALU (execution) and from RD2 to MUX4:1*/
+            ALUSrcB_reg     =0; /* Select (on Mux 4:1) B for srcB */
+            ALUControl_reg  =4'd1; /* Selects substract on ALU operation */
+            ALUSrcA_reg     =1; /* Select data from A (1) */	
+            ALUresult_en_reg=0; /* Allows writing to ALU register*/
+            PCSrc_reg       =1; /* Select 1=ALUOut */ 
+            Branch_reg      =1; /* Prepare signal for branch (and operation) */
+            PCWrite_reg     =1; /* Signal to enable updating Program Counter */
+        end 
     endcase
 end 
 
