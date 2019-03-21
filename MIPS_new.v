@@ -11,8 +11,7 @@ module MIPS_new
 (
 	input clk, 					/* clk signal */
 	input reset, 				/* async signal to reset */	
-	input [2:0]count_state 		/* 7 states */
-	
+	input [3:0]count_state 		/* 7 states */
 );
 
 /***************************************************************
@@ -83,7 +82,7 @@ wire Branch_wire;
 Signals to update Program Counter
 ***************************************************************/
 wire PCSrc_wire;					/* Signal for a mux to select the source of PC */
-wire PC_current;					/* Current Program counter */
+wire [DATA_WIDTH-1:0]PC_current;					/* Current Program counter */
 wire [DATA_WIDTH-1:0] PC_source;	/* signal from mux to PC register */
 wire PC_En_wire;
 wire [DATA_WIDTH-1:0] mux_address_Data_out;
@@ -112,6 +111,7 @@ ControlUnit CtrlUnit(
     .Mem_select(mem_sel_wire),		//@Control signal: Memory selection: 0=ROM, 1=RAM
 	.DataWrite(DataWrite_wire),
 	.RDx_FF_en(RDx_FF_en_wire),
+	.ALUresult_en(ALUresult_en_wire),
 	.PC_En(PC_En_wire)	
 );
 
@@ -159,7 +159,7 @@ MemoryUnit #(
 )MemoryMIPS
 (
     /* inputs */
-	.addr(ALUOut),					//Address to read from ROM
+	.addr(mux_address_Data_out),	//Address to read from ROM
 	.wdata(B),			            //data to write to RAM
 	.we(MemWrite_wire),				//@Control signal: enable
 	.clk(clk), 						//clock signal
@@ -191,13 +191,12 @@ Register#(
 );
 
 //#################### A3 Destination Mux ######################
-mux2to1
-#(
+mux2to1#(
 	.Nbit(3'd5)
 )mux_A3_destination
 (
 	.mux_sel(RegDst_wire),		/* 1= R type (rd), 0= I type (rt) */
-	.data1(rt_im_wire),
+	.data1(rt_wire),
 	.data2(rd_wire),
 	.Data_out(mux_A3out)
 );
@@ -265,7 +264,7 @@ Register#(
 //####################   MUX to update SrcA  ########################
 mux2to1#(
 	.Nbit(DATA_WIDTH)
-)MUX_to_updatePC
+)MUX_to_updateSrcA
 (
 	.mux_sel(ALUSrcA_wire),		//@Control signal: mux selector, 0= PC,1 =RD1
 	.data1(PC_current), 		//comes from PC Reg
@@ -294,7 +293,7 @@ ALU #(
 )alu_unit
 (
 	/* inputs */	
-	.dataA(SrcA),					//From MUX_to_updatePC 	, input 1
+	.dataA(SrcA),					//From MUX_to_updateSrcA 	, input 1
 	.dataB(SrcB),					//From Mux 4 to 1		, input 2 
 	.control(ALUControl_wire),		//@Control signal
 	/* outputs */

@@ -69,6 +69,7 @@ MIPS
  initial begin
  	forever #1 clk=!clk;
  end
+ 
  initial begin
  	#0 reset=1'b0;
 

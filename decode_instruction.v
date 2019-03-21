@@ -26,7 +26,9 @@ reg flag_I_type_reg;
 reg flag_J_type_reg;
 /* reg controlSrcA_reg; */
 
+/* wire [3:0]ALUControl; */
 
+assign ALUControl =ALUControl_reg;
 
 always @(opcode_reg,funct_reg) begin	
 
@@ -122,7 +124,12 @@ always @(opcode_reg,funct_reg) begin
 			end 
 			6'b000101: //bne
 			begin 
-
+				/* Edit these values */
+				destination_reg_indicator=0;	//destination will be rt
+				ALUControl_reg=4'b1010;			//	
+				flag_lw_reg=1'b0;
+				flag_sw_reg=1'b0;		
+				mux4selector_reg=2'd0;	
 			end 
 
 			default:
