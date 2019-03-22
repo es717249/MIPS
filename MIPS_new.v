@@ -86,6 +86,24 @@ wire [DATA_WIDTH-1:0]PC_current;					/* Current Program counter */
 wire [DATA_WIDTH-1:0] PC_source;	/* signal from mux to PC register */
 wire PC_En_wire;
 wire [DATA_WIDTH-1:0] mux_address_Data_out;
+/***************************************************************
+Signals for the Virtual Memory unit 
+***************************************************************/
+wire aligment_error_wire;
+wire [DATA_WIDTH-1:0] translated_addr_wire;
+
+
+
+VirtualMemory_unit #(
+	.ADDR_WIDTH(DATA_WIDTH)
+)VirtualMem
+(
+	.address(mux_address_Data_out),
+	.translated_addr(translated_addr_wire),
+	.aligment_error(aligment_error_wire)
+);
+
+
 //####################     Control unit   #######################
 ControlUnit CtrlUnit(
     /* Inputs */
@@ -159,7 +177,8 @@ MemoryUnit #(
 )MemoryMIPS
 (
     /* inputs */
-	.addr(mux_address_Data_out),	//Address to read from ROM
+	//.addr(mux_address_Data_out),	//Address to read from ROM	
+	.addr(translated_addr_wire),	//Address to read from ROM
 	.wdata(B),			            //data to write to RAM
 	.we(MemWrite_wire),				//@Control signal: enable
 	.clk(clk), 						//clock signal
@@ -281,6 +300,7 @@ mux4to1 #(
 	/* 32 bit DATA inputs */
 	.data1(B),					//From Register File RD2
 	.data2(4), 						//Sum 4 for PC+4
+	//.data2(1), 						//Sum 4 for PC+4
 	.data3(sign_extended_out),		//For Sign extended module output
 	.data4(sign_extended_out), 					//This should be shift<<2
 	/* 32 bit DATA outputs */

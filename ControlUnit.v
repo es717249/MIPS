@@ -10,12 +10,12 @@ module ControlUnit
 	parameter STORE=5,
 	parameter LOAD=6,
     parameter BRANCH=7,
-    parameter DETERMINE_EXECUTION= 8,
-    parameter GET_EFFECTIVE_ADDR=9,
-    parameter STORE_OR_LOAD=10,
-    parameter BRANCH_EQUAL_GET_ADDR=11,
-    parameter BRANCH_EQUAL_COMPARE=12,
-    parameter JUMP=13
+    //parameter DETERMINE_EXECUTION= 8,
+    parameter GET_EFFECTIVE_ADDR=8,
+    parameter STORE_OR_LOAD=9,
+    parameter BRANCH_EQUAL_GET_ADDR=10,
+    parameter BRANCH_EQUAL_COMPARE=11,
+    parameter JUMP=12
 	//parameter SEND_UART=7
 )
 (
@@ -88,8 +88,8 @@ assign MemtoReg = MemtoReg_reg;
 assign PCWrite = PCWrite_reg;
 assign Branch = Branch_reg;
 assign PCSrc = PCSrc_reg;
-/* assign ALUControl = ALUControl_reg; */
-assign ALUControl = ALUControl_wire;
+assign ALUControl = ALUControl_reg;
+//assign ALUControl = ALUControl_wire;
 assign ALUSrcB = ALUSrcB_reg;
 assign ALUSrcA = ALUSrcA_reg;
 assign RegWrite = RegWrite_reg;
@@ -141,35 +141,57 @@ always @(posedge clk or negedge reset) begin
             end
             DECODE:
             begin
-                if(count_state==4'd3)
-                    state <= DETERMINE_EXECUTION;                
-                else if(count_state==4'd2)  /* remain in DECODE */
+                if(count_state==4'd3)begin
+                    //state <= DETERMINE_EXECUTION;   
+
+                    if(flag_R_type_wire ==1'b1)begin /* Execute a R type operation */
+                    /* the decoder already determined the needed ALU operation */
+                        state <= EXECUTE;                   /* Go to execute */
+                    end 
+                    else if(flag_I_type_wire ==1'b1)begin   /* Execute an I type operation */                    
+                        /* Check for the opcode */
+                        if(Opcode == 6'b000100)begin    /* Beq operation */
+                            state <= BRANCH_EQUAL_GET_ADDR;
+                        end else if(Opcode == 6'b001000)begin   /* Addi operation */
+                            state <= EXECUTE;
+                        end else begin
+                            state <= GET_EFFECTIVE_ADDR;        /* Get effective address. This is common for sw and lw */
+                        end
+                    end
+                    else if(flag_J_type_wire==1'b1)begin
+                        state <= JUMP;
+                    end  
+                    else begin
+                        state <= FETCH;     /* Should not reach this point */
+                    end
+
+                end else if(count_state==4'd2)  /* remain in DECODE */
                     state <= DECODE;
             end
-            DETERMINE_EXECUTION:    /* count_state = 3 */
-            begin 
-                if(flag_R_type_wire ==1'b1)begin /* Execute a R type operation */
-                    /* the decoder already determined the needed ALU operation */
-                    state <= EXECUTE;                   /* Go to execute */
-                end 
-                else if(flag_I_type_wire ==1'b1)begin   /* Execute an I type operation */                    
-                    /* Check for the opcode */
-                    if(Opcode == 6'b000100)begin    /* Beq operation */
-                        state <= BRANCH_EQUAL_GET_ADDR;
-                    end else if(Opcode == 6'b001000)begin   /* Addi operation */
-                        state <= EXECUTE;
-                    end else begin
-                        state <= GET_EFFECTIVE_ADDR;        /* Get effective address. This is common for sw and lw */
-                    end
-                end
-                else if(flag_J_type_wire==1'b1)begin
-                    state <= JUMP;
-                end  
-                else begin
-                    state <= FETCH;     /* Should not reach this point */
-                end
+//            DETERMINE_EXECUTION:    /* count_state = 3 */
+//            begin 
+//                if(flag_R_type_wire ==1'b1)begin /* Execute a R type operation */
+//                    /* the decoder already determined the needed ALU operation */
+//                    state <= EXECUTE;                   /* Go to execute */
+//                end 
+//                else if(flag_I_type_wire ==1'b1)begin   /* Execute an I type operation */                    
+//                    /* Check for the opcode */
+//                    if(Opcode == 6'b000100)begin    /* Beq operation */
+//                        state <= BRANCH_EQUAL_GET_ADDR;
+//                    end else if(Opcode == 6'b001000)begin   /* Addi operation */
+//                        state <= EXECUTE;
+//                    end else begin
+//                        state <= GET_EFFECTIVE_ADDR;        /* Get effective address. This is common for sw and lw */
+//                    end
+//                end
+//                else if(flag_J_type_wire==1'b1)begin
+//                    state <= JUMP;
+//                end  
+//                else begin
+//                    state <= FETCH;     /* Should not reach this point */
+//                end
 
-            end 
+//            end 
             EXECUTE:            /* count_state = 3 */
             begin
                 if(count_state==4'd4)
@@ -257,7 +279,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire)begin
             RegWrite_reg    <=0; /* Enables writing on Register file*/
             RDx_FF_en_reg   =0; /* Controls the flip flop from RD1 to SrcA ALU (execution) and from RD2 to MUX4:1*/
             ALUSrcB_reg     <=0; /* Allows to select the operand (on Mux 4:1) for getting srcB number */
-            ALUControl_reg  =0; /* Selects ALU operation */
+            ALUControl_reg  =0; /* Selects ALU operation,prepares for fetch */
             ALUSrcA_reg     =0; /* Allows to select either PC (0) or data from A (1) */	
             ALUresult_en_reg<=0; /* Allows writing to ALU register*/
             PCSrc_reg       =0; /* Allows to select the PC source, 0=ALUResult, 1=ALUOut*/
@@ -272,7 +294,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire)begin
             IorD_reg        =0;     /* Selects the address: 0= program counter(fetch), 1=load operation*/
             MemWrite_reg    =0;     /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
             Mem_select_reg  =0;     /* Memory selection: 0=ROM, 1=RAM*/
-            IRWrite_reg     =1;     /* Enable signal for Instruction Flip flop (ROM to Reg File)*/
+            IRWrite_reg     <=1;     /* Enable signal for Instruction Flip flop (ROM to Reg File)*/
             DataWrite_reg   =0;     /* Controls the flip flop for data (RAM to Reg File)*/
             MemtoReg_reg    =0;	    /* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
             RegDst_reg      =0;     /* Mux selector for A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
@@ -280,6 +302,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire)begin
             RDx_FF_en_reg   =0;     /* Controls the flip flop from RD1 to SrcA ALU (execution) and from RD2 to MUX4:1*/
             ALUSrcB_reg     <=2'd1;  /* Selects operand 01 = 4 to do PC+4*/
             ALUControl_reg  =4'd2;  /* Selects ALU operation : Sum */
+            //ALUControl_reg  <=ALUControl_wire;  /* Selects ALU operation : Sum */
+            
             ALUSrcA_reg     =0;     /* Allows to select either PC (0) */	
             ALUresult_en_reg<=0;     /* Allows writing to ALU register*/
             PCSrc_reg       =0;     /* Allows to select the PC source, 0=ALUResult*/
@@ -296,7 +320,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire)begin
             IorD_reg        =0;     /* not relevant*/
             MemWrite_reg    =0;     /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
             Mem_select_reg  =0;     /* Memory selection: 0=ROM,  1=RAM*/
-            IRWrite_reg     =0;     /* not relevant*/
+            IRWrite_reg     <=0;     /* not relevant*/
             DataWrite_reg   =0;     /* not relevant */
             MemtoReg_reg    =0;	    /* not relevant */
             RegDst_reg      = destination_indicator_wire;     /* A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
