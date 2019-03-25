@@ -30,6 +30,8 @@ Signals for ALU unit
 ***************************************************************/
 
 wire zero;							//zero flag
+wire carry;							//carry flag
+wire negative;						//negative flag
 wire [DATA_WIDTH-1:0]shifted2;		//4th input for ALU: shifted by 2 data
 wire [DATA_WIDTH-1:0] SrcA;			//input 0 of ALU
 wire [DATA_WIDTH-1:0] SrcB;			//input 1 of ALU
@@ -39,6 +41,7 @@ wire [DATA_WIDTH-1 : 0]ALUOut;		//Registerd output of ALU
 wire [1:0]sel_muxALU_srcB; 			//@Control signal: allows to select the operand for getting srcB number on mux 'Mux4_1_forALU'
 wire ALUSrcA_wire;					//@Control signal: allow to select the SrcA source. 0=PC, 1=RD1
 wire ALUresult_en_wire;				//@Control signal: enables the FF at ALUout
+
 /***************************************************************
 Signals for Register File
 ***************************************************************/
@@ -79,11 +82,17 @@ wire PCWrite_wire;
 wire Branch_wire;
 
 /***************************************************************
+Signals for Shift and concatenate jump address module 
+***************************************************************/
+wire [DATA_WIDTH-1:0] New_JumpAddress;
+wire flag_Jtype_wire;
+/***************************************************************
 Signals to update Program Counter
 ***************************************************************/
 wire PCSrc_wire;					/* Signal for a mux to select the source of PC */
 wire [DATA_WIDTH-1:0]PC_current;					/* Current Program counter */
 wire [DATA_WIDTH-1:0] PC_source;	/* signal from mux to PC register */
+wire [DATA_WIDTH-1:0] PC_source_tmp;	/* signal from mux to PC register */
 wire PC_En_wire;
 wire [DATA_WIDTH-1:0] mux_address_Data_out;
 /***************************************************************
@@ -91,8 +100,7 @@ Signals for the Virtual Memory unit
 ***************************************************************/
 wire aligment_error_wire;
 wire [DATA_WIDTH-1:0] translated_addr_wire;
-
-
+wire [DATA_WIDTH-1:0] MIPS_address;
 
 VirtualMemory_unit #(
 	.ADDR_WIDTH(DATA_WIDTH)
@@ -100,6 +108,7 @@ VirtualMemory_unit #(
 (
 	.address(mux_address_Data_out),
 	.translated_addr(translated_addr_wire),
+	.MIPS_address(MIPS_address),
 	.aligment_error(aligment_error_wire)
 );
 
@@ -130,7 +139,8 @@ ControlUnit CtrlUnit(
 	.DataWrite(DataWrite_wire),
 	.RDx_FF_en(RDx_FF_en_wire),
 	.ALUresult_en(ALUresult_en_wire),
-	.PC_En(PC_En_wire)	
+	.PC_En(PC_En_wire),
+	.flag_J_type_out(flag_Jtype_wire)
 );
 
 //####################     Address preparation   #######################
@@ -155,7 +165,7 @@ Register#(
 (		
 	.clk(clk),
 	.reset(reset),
-	.enable(PC_En_wire),
+	.enable(PC_En_wire),	
 	.Data_Input(PC_source), 	//This comes from the ALU Result after MUX_for_PC_source
 	.Data_Output(PC_current)	//output Program counter update
 );
@@ -177,7 +187,6 @@ MemoryUnit #(
 )MemoryMIPS
 (
     /* inputs */
-	//.addr(mux_address_Data_out),	//Address to read from ROM	
 	.addr(translated_addr_wire),	//Address to read from ROM
 	.wdata(B),			            //data to write to RAM
 	.we(MemWrite_wire),				//@Control signal: enable
@@ -291,7 +300,13 @@ mux2to1#(
 	.Data_out(SrcA) 			//Input 1 of ALU
 );
 
+
+
 //##########  Mux from Register File to ALU (srcB) ############
+
+assign shifted2[1:0]=2'd0;
+assign shifted2[DATA_WIDTH-1:2] = sign_extended_out[DATA_WIDTH-1-2:0];		/* immediate value x 4 */
+
 mux4to1 #(
 	.Nbit(DATA_WIDTH)
 )mux4_1_forALU
@@ -300,9 +315,8 @@ mux4to1 #(
 	/* 32 bit DATA inputs */
 	.data1(B),					//From Register File RD2
 	.data2(4), 						//Sum 4 for PC+4
-	//.data2(1), 						//Sum 4 for PC+4
 	.data3(sign_extended_out),		//For Sign extended module output
-	.data4(sign_extended_out), 					//This should be shift<<2
+	.data4(shifted2), 					//This should be shift<<2
 	/* 32 bit DATA outputs */
 	.Data_out(SrcB)					//output of Mux
 );
@@ -316,8 +330,11 @@ ALU #(
 	.dataA(SrcA),					//From MUX_to_updateSrcA 	, input 1
 	.dataB(SrcB),					//From Mux 4 to 1		, input 2 
 	.control(ALUControl_wire),		//@Control signal
+	.shmt(shamt_wire),				//shamt field to do shift operations
 	/* outputs */
-	.carry(zero),					//Zero signal
+	.carry(carry),					//Carry signal
+	.zero(zero),					//Zero signal
+	.negative(negative),			//Negative signal
 	.dataC(ALUResult) 				//Result	
 );
 
@@ -333,6 +350,7 @@ Register#(
 	.Data_Output(ALUOut)//output Program counter update
 );
 
+//####################   MUX after ALU result to update PC ####################
 mux2to1#(
 	.Nbit(DATA_WIDTH)
 )MUX_for_PC_source
@@ -340,7 +358,30 @@ mux2to1#(
 	.mux_sel(PCSrc_wire),
 	.data1(ALUResult), //comes from PC Reg
 	.data2(ALUOut), //from ALUout signal 
-	.Data_out(PC_source) //this have the Address for Memory input
+	.Data_out(PC_source_tmp) //this have the Address for Memory input
+	//.Data_out(PC_source) //this have the Address for Memory input
+);
+
+
+//####################   Shift and concatenate jump address module ####################
+Shift_Concatenate shiftConcat_mod
+(
+	.J_address(address_j_wire ), /* shifted <<2 */
+	.PC_add(PC_current[31:28]),
+	.new_jumpAddr(New_JumpAddress)
+);
+//assign New_JumpAddress = {PC_current[31:28],address_j_wire[23:2]};
+
+//####################   MUX to update PC considering Jump instruction  ########################
+
+mux2to1#(
+	.Nbit(DATA_WIDTH)
+)MUX_to_updatePC_withJump
+(
+	.mux_sel(flag_Jtype_wire),		//@Control signal: mux selector, 0=normal PC,1 =jump address
+	.data1(PC_source_tmp), 			//comes from MUX_for_PC_source
+	.data2(New_JumpAddress), 		//New jump address 32 bit long
+	.Data_out(PC_source) 			//Input for ProgramCounter_Reg
 );
 
 endmodule

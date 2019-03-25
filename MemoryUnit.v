@@ -27,7 +27,8 @@ module MemoryUnit
 	reg [DATA_WIDTH-1:0] rom[2**ADDR_WIDTH-1:0]; 
 
 	// Declare the RAM variable
-	reg [DATA_WIDTH-1:0] ram[2**ADDR_WIDTH-1:0];
+	//reg [DATA_WIDTH-1:0] ram[2**ADDR_WIDTH-1:0];
+	reg [DATA_WIDTH-1:0] ram[2**10-1:0];
 	
 	wire [DATA_WIDTH-1:0]	q_rom;		//wire to redirect ROM value to the output
 	wire [DATA_WIDTH-1:0]	q_ram;		//wire to redirect RAM value to the output
@@ -39,9 +40,9 @@ module MemoryUnit
 	// in the file single_port_rom_init.txt.  Without this file, this design will not compile.
 
 	initial   //no es sintetizable pero le ayuda al sintetizador para inferir una memoria rom y para inicializarla
-	begin
-		//$readmemh("rom_values_init.hex", rom);
-		$readmemh("R_ins.hex", rom);
+	begin		
+		//$readmemh("Test_MIPS_1inst.hex", rom);	//Test1: instructions R,I,SW,LW,BEQ,BNE
+		$readmemh("Test_MIPS_jump.hex", rom);	//Test2: instructions jump
 	end
 
 	always @ (posedge clk)

@@ -12,7 +12,6 @@ module decode_instruction
 	output flag_I_type,				//I type =1
 	output flag_J_type,				//J type =1
 	output [1:0]mux4selector		//allows to select the operand for getting srcB number
-	//output controlSrcA
 	)				//to control the source data for srcA
 ;
 
@@ -24,9 +23,6 @@ reg flag_lw_reg;
 reg flag_R_type_reg;
 reg flag_I_type_reg;
 reg flag_J_type_reg;
-/* reg controlSrcA_reg; */
-
-/* wire [3:0]ALUControl; */
 
 assign ALUControl =ALUControl_reg;
 
@@ -68,32 +64,106 @@ always @(opcode_reg,funct_reg) begin
 			end
 		endcase
 
-	end else begin  //is an I type instruction, destination_reg_indicator=0
+	end else begin  //It is an I or J type instruction, destination_reg_indicator=0
 		
 		flag_R_type_reg = 0;	//Not a R type instruction 
-		flag_I_type_reg = 1;	//Indicate it is I type instruction
-		flag_J_type_reg = 0;	//Not a J type instruction
+		//flag_I_type_reg = 1;	//Indicate it is I type instruction
+		//flag_J_type_reg = 0;	//Not a J type instruction
 
 		case(opcode_reg)
+			6'b000010: //Jump - 0x02
+			begin
+			  	flag_I_type_reg = 0;	//Not an I type instruction
+				flag_J_type_reg = 1;	//J type instruction
+				flag_lw_reg=1'b0;		//not relevant
+				flag_sw_reg=1'b0;		//not relevant
+				destination_reg_indicator=0;	//not relevant
+				ALUControl_reg<=4'd0;			//not relevant
+				mux4selector_reg=2'd0;			//not relevant
+			end
+			6'b000011: //Jump and link- 0x03
+			begin
+				flag_I_type_reg = 0;	//Not an I type instruction
+				flag_J_type_reg = 1;	//J type instruction
+				flag_lw_reg=1'b0;		//not relevant
+				flag_sw_reg=1'b0;		//not relevant
+				destination_reg_indicator=0;	//not relevant
+				ALUControl_reg<=4'd0;			//not relevant
+				mux4selector_reg=2'd0;			//not relevant
+			end
 
+			6'b000100: //beq - 0x04
+			begin
+				destination_reg_indicator=0;	//destination will be rt
+				ALUControl_reg<=4'd2;			//operation add 				
+				flag_lw_reg=1'b0;
+				flag_sw_reg=1'b0;		
+				mux4selector_reg=2'd0;	
+				flag_I_type_reg = 1;	//Indicate it is I type instruction
+				flag_J_type_reg = 0;	//Not a J type instruction
+			end 
+			6'b000101: //bne - 0x05
+			begin 
+				/* Edit these values */
+				destination_reg_indicator=0;	//destination will be rt
+				ALUControl_reg<=4'd2;			//operation add 				
+				flag_lw_reg=1'b0;
+				flag_sw_reg=1'b0;		
+				mux4selector_reg=2'd0;	
+				flag_I_type_reg = 1;	//Indicate it is I type instruction
+				flag_J_type_reg = 0;	//Not a J type instruction
+			end 
 			6'b001000: //addi - 0x08
 			//Tengo que guardar estos datos en el register file
 			begin
 				destination_reg_indicator=0;	//destination will be rt
 				ALUControl_reg<=4'd2;			//operation add 				
 				mux4selector_reg=2'd2;
-				/* controlSrcA_reg =0; */
 				flag_lw_reg=1'b0;
 				flag_sw_reg=1'b0;
-			end
+				flag_I_type_reg = 1;	//Indicate it is I type instruction
+				flag_J_type_reg = 0;	//Not a J type instruction
+			end			
 			6'b001100: //andi - 0x0C
 			begin
 				destination_reg_indicator=0;	//destination will be rt
 				ALUControl_reg<=4'd5;			//operation and 	
-				mux4selector_reg=2'd2;	
-				/* controlSrcA_reg =0; */		
+				mux4selector_reg=2'd2;			
 				flag_lw_reg=1'b0;
 				flag_sw_reg=1'b0;
+				flag_I_type_reg = 1;	//Indicate it is I type instruction
+				flag_J_type_reg = 0;	//Not a J type instruction
+			end
+			6'b001101: //ori - 0x0D
+			begin
+				destination_reg_indicator=0;	//destination will be rt
+				ALUControl_reg<=4'd6;			//operation or
+				mux4selector_reg=2'd2;			
+				flag_lw_reg=1'b0;
+				flag_sw_reg=1'b0;
+				flag_I_type_reg = 1;	//Indicate it is I type instruction
+				flag_J_type_reg = 0;	//Not a J type instruction
+			end
+			6'b001111:	//lui - 0x0F
+			begin
+				destination_reg_indicator=0;	//destination will be rt
+				ALUControl_reg<=4'b1100;			//shift <<16 operation
+				//create a flag so we can pass to write back 
+				flag_lw_reg=1'b0;
+				flag_sw_reg=1'b1;	
+				mux4selector_reg=2'd2;	
+				flag_I_type_reg = 1;	//Indicate it is I type instruction
+				flag_J_type_reg = 0;	//Not a J type instruction
+			end
+			6'b100011: /* lw	- 0x23 */
+			begin
+				destination_reg_indicator=0;	//destination will be rt
+				ALUControl_reg<=4'b1010;			//
+				flag_lw_reg=1'b1;
+				flag_sw_reg=1'b0;		
+				mux4selector_reg=2'd0;		
+				flag_I_type_reg = 1;	//Indicate it is I type instruction
+				flag_J_type_reg = 0;	//Not a J type instruction
 			end
 			6'b101011: //sw - 0x2B
 			begin
@@ -103,34 +173,10 @@ always @(opcode_reg,funct_reg) begin
 				flag_lw_reg=1'b0;
 				flag_sw_reg=1'b1;	
 				mux4selector_reg=2'd0;	
-				/* controlSrcA_reg =0; */
+				flag_I_type_reg = 1;	//Indicate it is I type instruction
+				flag_J_type_reg = 0;	//Not a J type instruction
 			end
-			6'b100011: //lw	- 0x23
-			begin
-				destination_reg_indicator=0;	//destination will be rt
-				ALUControl_reg<=4'b1010;			//
-				flag_lw_reg=1'b1;
-				flag_sw_reg=1'b0;		
-				mux4selector_reg=2'd0;	
-				/* controlSrcA_reg =0; */	
-			end
-			6'b000100: //beq - 0x04
-			begin
-				destination_reg_indicator=0;	//destination will be rt
-				ALUControl_reg<=4'b1010;			//	
-				flag_lw_reg=1'b0;
-				flag_sw_reg=1'b0;		
-				mux4selector_reg=2'd0;	
-			end 
-			6'b000101: //bne
-			begin 
-				/* Edit these values */
-				destination_reg_indicator=0;	//destination will be rt
-				ALUControl_reg<=4'b1010;			//	
-				flag_lw_reg=1'b0;
-				flag_sw_reg=1'b0;		
-				mux4selector_reg=2'd0;	
-			end 
+			
 
 			default:
 			begin
@@ -138,8 +184,9 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=0;//destination will be rt
 				flag_lw_reg=1'b0;
 				flag_sw_reg=1'b0;	
-				mux4selector_reg=2'd0;	
-				/* controlSrcA_reg =0;		 */
+				mux4selector_reg=2'd0;
+				flag_I_type_reg = 1;	//Indicate it is I type instruction
+				flag_J_type_reg = 1;	//Not a J type instruction
 			end
 		endcase 
 	end 
@@ -150,7 +197,6 @@ assign ALUControl= ALUControl_reg ;
 assign flag_lw = flag_lw_reg;
 assign flag_sw = flag_sw_reg ;
 assign mux4selector= mux4selector_reg;
-//assign controlSrcA =controlSrcA_reg ;
 assign flag_R_type = flag_R_type_reg;
 assign flag_I_type = flag_I_type_reg;
 assign flag_J_type = flag_J_type_reg;

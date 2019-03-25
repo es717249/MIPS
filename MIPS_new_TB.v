@@ -1,9 +1,9 @@
-/*Testing MIPS_new this version tests:
-    Instruction preparation module
-    RegFile module
-    ALU module
-    Memory unit
-    Manually introducing the instruction , data and control signals
+/*Testing MIPS_new:
+    
+    Simulation with modelsim:
+    vsim -voptargs=+acc=npr
+
+    Testing the following code in file: Test_MIPS_1inst.asm, and using Test_MIPS_1inst.hex
 */
 module MIPS_new_TB;
 
@@ -37,7 +37,56 @@ initial begin
     #0 reset=1'b0;
     #10 reset =1'b1;
     
+    // ################### Testing add, addi, & sll instructions ################### //
+
     #0 state=0;    //IDLE
+
+    /* Processing instruction 21080003: addi $t0,$t0,0x03 */
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK
+
+    /* Processing instruction 21290003: addi $t1,$t1,0x04 */
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK
+
+
+    /* Processing instruction 11090002: beq $8,$9,x02
+    - To test this change the previous instructions(in .hex file), so the registers have the same values*/
+    
+    /*  OR */
+
+    /* Processing instruction 15090002: bne $8,$9,x02
+    - To test this change the previous instructions(in .hex file), so the registers have the same values
+    */
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK
+
+
+    /* If beq was selected to branch, do not uncomment the following 2 cycles, otherwise uncomment */
+    //################################## begin
+//    #20 state=1;    //FETCH
+//    #20 state=2;    //DECODE
+//    #20 state=3;    //EXECUTE
+//    #20 state=4;    //WRITE BACK
+
+//    #20 state=1;    //FETCH
+//    #20 state=2;    //DECODE
+//    #20 state=3;    //EXECUTE
+//    #20 state=4;    //WRITE BACK
+    //##################################  end 
+
+    /* Processing instruction : lui $s0,0x1001 */
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK
+
     /* Processing instruction 21080001: addi $t0,$t0,0x01 */
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
@@ -69,17 +118,78 @@ initial begin
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
     
-    /* Processing instruction 01288820: add $s1,$t1,$t0*/
+    /* Processing instruction 01288820: add $s1,$t1,$t0 = 4+1*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
 
-    /* Processing instruction 022a9020: add $s2,$s1,$t2 */
+    /* Processing instruction 022a9020: add $s2,$s1,$t2 = 5+A*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
+
+    /* Processing instruction 00118880: sll $s1,$s1,0x02 = 5<<2, 5x4*/
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK
+
+    /* Processing instruction 022a9025: or $s2,$s1,$t2 = 20d|A = 0x1E */
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK
+
+    /* Processing instruction 325300f0: andi $s3,$s2,0xF0 = 0x1E & 0xF0 =0x10 */
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK
+
+    // ################### Testing store and load instructions ################### //
+    /* Processing instruction ad910000: sw $s1,0,($t4) : store 0x14 in 0x02*/
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //GET EFFECTIVE ADDRESS
+    #20 state=4;    //STORE
+
+    /* Processing instruction ad920004: sw $s2,4,($t4) : store 0x1E in 0x02+4*/
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //GET EFFECTIVE ADDRESS
+    #20 state=4;    //STORE
+
+    /* Processing instruction ad930008: sw $s3,8,($t4) : store 0x10 in 0x02+8*/
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //GET EFFECTIVE ADDRESS
+    #20 state=4;    //STORE
+
+    /* Processing instruction ad8b000c: sw $t3,12,($t4) : store 0xFF in 0x02+C */
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //GET EFFECTIVE ADDRESS
+    #20 state=4;    //STORE
+    
+    /* Processing instruction 8d940000: lw  $s4,0,($t4) : load 20d in 0x02+4*/
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //GET EFFECTIVE ADDRESS
+    #20 state=4;    //LOAD
+    
+    /* Processing instruction 8d950004: lw  $s5,4,($t4) :load 0x1E in 0x02+8*/
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //GET EFFECTIVE ADDRESS
+    #20 state=4;    //LOAD
+    
+    /* Processing instruction 8d960008: lw  $s6,8,($t4) :load 0x10 in 0x02+C*/
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //GET EFFECTIVE ADDRESS
+    #20 state=4;    //LOAD
 
 
 end 
