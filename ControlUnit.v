@@ -10,13 +10,14 @@ module ControlUnit
 	parameter LOAD=6,
     parameter GET_EFFECTIVE_ADDR=7,
     parameter BRANCH=8,
-    //parameter STORE_OR_LOAD=9,
     parameter BRANCH_EQUAL_GET_ADDR=9,
     parameter BRANCH_EQUAL_COMPARE=10,
     parameter EXEC_JUMP=11,
     parameter UNDEFINED_INSTRUCTION=12,
     parameter NOTBRANCH_EQUAL_COMPARE=13,
-    parameter UPDATE_PC=14
+    parameter UPDATE_PC=14,
+    parameter DUMMY=15
+
 	//parameter SEND_UART=7
 )
 (
@@ -118,6 +119,7 @@ decode_instruction decoder_module
     .flag_J_type(flag_J_type_wire),
 	.mux4selector(ALUSrcB_wire)    //allows to select the operand for getting srcB number
 );
+
 
 
 always @(posedge clk or negedge reset) begin
@@ -242,10 +244,17 @@ always @(posedge clk or negedge reset) begin
 
             STORE:      /* Save from a register to memory. Write to memory from reg  */
             begin
-                if(count_state==4'd1)
-                    state <= FETCH;
+                if(count_state==4'd5)
+                    state <= DUMMY;
                 else if(count_state == 4'd4)
                     state <=STORE;
+            end
+            DUMMY:
+            begin
+                if(count_state==4'd1)
+                    state <= FETCH;
+                else if(count_state == 4'd5)
+                    state <=DUMMY;
             end
             LOAD:       /* Copy from memory to a register */
             begin
@@ -514,6 +523,25 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero)begin
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
         end
+        DUMMY:
+        begin
+            IorD_reg        =1; /* Selects the address: 1=store operation*/
+            MemWrite_reg    =0; /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
+            Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
+            IRWrite_reg     =0; /* not relevant */
+            DataWrite_reg   =0; /* not relevant */
+            MemtoReg_reg    =0;	/* not relevant */
+            RegDst_reg      =0; /* not relevant */
+            RegWrite_reg    <=0; /* not relevant */
+            RDx_FF_en_reg   =0; /* not relevant */
+            ALUSrcB_reg     <=0; /* not relevant */
+            ALUControl_reg  =0; /* not relevant */
+            ALUSrcA_reg     =0; /* not relevant */	
+            ALUresult_en_reg<=0; /* not relevant */
+            PCSrc_reg       =0; /* not relevant */
+            Branch_reg      =0; /* not relevant */
+            PCWrite_reg     =0; /* not relevant */
+        end
         LOAD:
         begin
             //PC_En_reg       =0; /* not relevant */
@@ -524,7 +552,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero)begin
             DataWrite_reg   =1; /* Controls the flip flop for data (RAM to Reg File)*/
             MemtoReg_reg    =1;	/* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
             RegDst_reg      =destination_indicator_wire; 
-            RegWrite_reg    <=0; /* not relevant */
+            RegWrite_reg    <=1; /* write to register file */
             RDx_FF_en_reg   =0; /* not relevant */
             ALUSrcB_reg     <=0; /* not relevant */
             ALUControl_reg  =0; /* not relevant */

@@ -147,7 +147,7 @@ always @(opcode_reg,funct_reg) begin
 			6'b001111:	//lui - 0x0F
 			begin
 				destination_reg_indicator=0;	//destination will be rt
-				ALUControl_reg<=4'b1100;			//shift <<16 operation
+				ALUControl_reg<=4'b1011;			//shift <<16 operation
 				//create a flag so we can pass to write back 
 				flag_lw_reg=1'b0;
 				flag_sw_reg=1'b1;	
@@ -158,7 +158,7 @@ always @(opcode_reg,funct_reg) begin
 			6'b100011: /* lw	- 0x23 */
 			begin
 				destination_reg_indicator=0;	//destination will be rt
-				ALUControl_reg<=4'b1010;			//
+				ALUControl_reg<=4'd2;			//
 				flag_lw_reg=1'b1;
 				flag_sw_reg=1'b0;		
 				mux4selector_reg=2'd0;		

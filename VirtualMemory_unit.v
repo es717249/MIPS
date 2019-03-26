@@ -15,6 +15,7 @@ assign aligment_error = (address & 3)==0 ? 1'd0 : 1'd1 ;
 
 /* divide by 4  */
 assign add_tmp = address & 32'hFFBFFFFF;
+//assign add_tmp = address - 32'h400000;
 assign translated_addr = (add_tmp >> 2) ;  
 //assign MIPS_address = add_tmp + 32'h400000;
 assign MIPS_address = add_tmp + 32'h3FFFFC;

@@ -169,8 +169,8 @@ add wave -noupdate /MIPS_jump_TB/testing_unit/CtrlUnit/DataWrite_reg
 add wave -noupdate /MIPS_jump_TB/testing_unit/CtrlUnit/RDx_FF_en_reg
 add wave -noupdate /MIPS_jump_TB/testing_unit/CtrlUnit/ALUresult_en_reg
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {410 ps} 0} {{Cursor 2} {430 ps} 0} {{Cursor 3} {450 ps} 0} {{Cursor 4} {770 ps} 0} {{Cursor 8} {890 ps} 0} {{Cursor 9} {1150 ps} 0}
-quietly wave cursor active 4
+WaveRestoreCursors {{Cursor 1} {110 ps} 0} {{Cursor 2} {561 ps} 0} {{Cursor 3} {610 ps} 0} {{Cursor 4} {770 ps} 0} {{Cursor 8} {890 ps} 0} {{Cursor 9} {1150 ps} 0}
+quietly wave cursor active 1
 configure wave -namecolwidth 170
 configure wave -valuecolwidth 264
 configure wave -justifyvalue left
@@ -185,4 +185,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {594 ps} {1041 ps}
+WaveRestoreZoom {0 ps} {549 ps}

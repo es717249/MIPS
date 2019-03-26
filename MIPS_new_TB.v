@@ -47,7 +47,7 @@ initial begin
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
 
-    /* Processing instruction 21290003: addi $t1,$t1,0x04 */
+    /* Processing instruction 21290003: addi $t1,$t1,0x03 */
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
@@ -81,116 +81,163 @@ initial begin
 //    #20 state=4;    //WRITE BACK
     //##################################  end 
 
-    /* Processing instruction : lui $s0,0x1001 */
+    /* Processing instruction 3c101001: lui $s0,0x1001 */
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
 
-    /* Processing instruction 21080001: addi $t0,$t0,0x01 */
+    /* Processing instruction 21080001: addi $t0,$t0,0x01 = 3+1 = 4*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
     /* Check at this point that the Register File has in RD1 and RD2 the desired value */
     
-    /* Processing instruction 21290004: addi $t1,$t1,0x04 */
+    /* Processing instruction 21290004: addi $t1,$t1,0x04 = 3+4=7, or 3+3=6 */
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
     
-    /* Processing instruction 214a000a: addi $t2,$t2,0x0A */
+    /* Processing instruction 214a000a: addi $t2,$t2,0x0A , store 0xA*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
 
-    /* Processing instruction 216b00ff: addi $t3,$t3,0xFF */
+    /* Processing instruction 216b00ff: addi $t3,$t3,0xFF ,store 0xFF*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
 
-    /* Processing instruction 218c0002: addi $t4,$t4,0x02 */
+    /* Processing instruction 3c0c1001: lui $t4,0x1001 ,store 0x10010000*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
     
-    /* Processing instruction 01288820: add $s1,$t1,$t0 = 4+1*/
+    /* Processing instruction 218c0000: addi $t4,$t4,0x0 ,store  0x10010000*/
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK  
+
+
+    /* Processing instruction 01288820: add $s1,$t1,$t0 = 7+4 =B, or 6+4=A*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
 
-    /* Processing instruction 022a9020: add $s2,$s1,$t2 = 5+A*/
+    /* Processing instruction 022a9020: add $s2,$s1,$t2 = B+A=15h, or A+A=14h*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
 
-    /* Processing instruction 00118880: sll $s1,$s1,0x02 = 5<<2, 5x4*/
+    /* Processing instruction 00118880: sll $s1,$s1,0x02 = B<<2 (11x4=2c), or A<<2 (10x4=28) */
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
 
-    /* Processing instruction 022a9025: or $s2,$s1,$t2 = 20d|A = 0x1E */
+    /* Processing instruction 022a9025: or $s2,$s1,$t2 = 2C|A= 0x2E, or 28|A= 0x2A  */
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
 
-    /* Processing instruction 325300f0: andi $s3,$s2,0xF0 = 0x1E & 0xF0 =0x10 */
+    /* Processing instruction 325300f0: andi $s3,$s2,0xF0 = 0x2E & 0xF0 =0x20, or  0x2A & 0xF0 =0x20 */
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //EXECUTE
     #20 state=4;    //WRITE BACK
+    /* The result will not be seen at this point */
 
     // ################### Testing store and load instructions ################### //
-    /* Processing instruction ad910000: sw $s1,0,($t4) : store 0x14 in 0x02*/
+    /* Processing instruction ad910000: sw $s1,0,($t4) : store 0x2C or 0x28 in 0x10010000+0*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //GET EFFECTIVE ADDRESS
     #20 state=4;    //STORE
+    #20 state=5;    //STORE DUMMY
 
-    /* Processing instruction ad920004: sw $s2,4,($t4) : store 0x1E in 0x02+4*/
+    /* Processing instruction ad920004: sw $s2,4,($t4) : store 0x2E or 0x2A in 0x10010000+4*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //GET EFFECTIVE ADDRESS
     #20 state=4;    //STORE
+    #20 state=5;    //STORE DUMMY
 
-    /* Processing instruction ad930008: sw $s3,8,($t4) : store 0x10 in 0x02+8*/
+    /* Processing instruction ad930008: sw $s3,8,($t4) : store 0x20 in 0x10010000+8*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //GET EFFECTIVE ADDRESS
     #20 state=4;    //STORE
+    #20 state=5;    //STORE DUMMY
 
-    /* Processing instruction ad8b000c: sw $t3,12,($t4) : store 0xFF in 0x02+C */
+    /* Processing instruction ad8b000c: sw $t3,12,($t4) : store 0xFF in 0x10010000+C */
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //GET EFFECTIVE ADDRESS
     #20 state=4;    //STORE
+    #20 state=5;    //STORE DUMMY
     
-    /* Processing instruction 8d940000: lw  $s4,0,($t4) : load 20d in 0x02+4*/
+    /* Processing instruction 8d940000: lw  $s4,0,($t4) : load 20d in 0x10010000+4*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //GET EFFECTIVE ADDRESS
     #20 state=4;    //LOAD
     
-    /* Processing instruction 8d950004: lw  $s5,4,($t4) :load 0x1E in 0x02+8*/
+    
+    /* Processing instruction 8d950004: lw  $s5,4,($t4) :load 0x1E in 0x10010000+8*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //GET EFFECTIVE ADDRESS
     #20 state=4;    //LOAD
     
-    /* Processing instruction 8d960008: lw  $s6,8,($t4) :load 0x10 in 0x02+C*/
+    /* Processing instruction 8d960008: lw  $s6,8,($t4) :load 0x10 in 0x10010000+C*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //GET EFFECTIVE ADDRESS
     #20 state=4;    //LOAD
 
+    //Verify content of RAM
+
+    /* Processing instruction 22940000: addi $s4,$s4,0x00 */
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK
+    /* Processing instruction 22940001: addi $s4,$s4,0x01 */
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK
+
+    /* Processing instruction 22b50000: addi $s5,$s5,0x00 */
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK
+    /* Processing instruction 22b50001: addi $s5,$s5,0x01 */
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK
+
+    /* Processing instruction 22d60000: addi $s6,$s6,0x00 */
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK
+    /* Processing instruction 22d60001: addi $s6,$s6,0x01 */
+    #20 state=1;    //FETCH
+    #20 state=2;    //DECODE
+    #20 state=3;    //EXECUTE
+    #20 state=4;    //WRITE BACK
 
 end 
 

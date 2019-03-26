@@ -1,19 +1,21 @@
 .text 
 
 	add $t0,$t0,0x03
-	add $t1,$t1,0x04
-	bne $t0,$t1, main	# Branch if equal
+	add $t1,$t1,0x03
+	beq $t0,$t1, main	# Branch if equal
 	addi $t0,$t0,0x07
 	addi $t1,$t1,0x07
 		# Jumping to while label
 main:
 ##############################
-	lui $s0,0x1001
+	lui $s0,0x1001	
 	add $t0,$t0,0x01
 	add $t1,$t1,0x04
 	add $t2,$t2,0x0A
 	add $t3,$t3,0xFF
-	add $t4,$t4,0x02
+	lui $t4,0x1001
+#	addi $t4,$t4,0x24
+	addi $t4,$t4,0x00
 
 	add $s1,$t1,$t0	 #t0+t1 =1+4
 	add $s2,$s1,$t2	 #5+A = F
@@ -28,3 +30,10 @@ main:
 	lw  $s4,0,($t4)
 	lw  $s5,4,($t4)
 	lw  $s6,8,($t4)
+	
+	addi $s4,$s4,0
+	addi $s4,$s4,1
+	addi $s5,$s5,0
+	addi $s5,$s5,1	
+	addi $s6,$s6,0	
+	addi $s6,$s6,1
