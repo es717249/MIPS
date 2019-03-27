@@ -11,7 +11,7 @@ module MIPS_new
 (
 	input clk, 					/* clk signal */
 	input reset, 				/* async signal to reset */	
-	input [3:0]count_state 		/* 7 states */
+	input [2:0]count_state 		/* 7 states */
 );
 
 /***************************************************************

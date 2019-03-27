@@ -24,7 +24,7 @@ module ControlUnit
     /* Inputs */
     input clk,              //clk signal
 	input reset,            //async signal to reset 	
-    input [3:0]count_state, 
+    input [2:0]count_state, 
     input [5:0]Opcode,
     input [5:0]Funct,
     input Zero,
@@ -129,21 +129,21 @@ always @(posedge clk or negedge reset) begin
         case(state)
             IDLE:
             begin
-                if(count_state==4'd1)
+                if(count_state==3'd1)
                     state <= FETCH;
-                else if(count_state ==4'd0) /* remain in the same state: IDLE */
+                else if(count_state ==3'd0) /* remain in the same state: IDLE */
                     state <= IDLE;
             end
             FETCH:
             begin
-                if(count_state==4'd2)
+                if(count_state==3'd2)
                     state <= DECODE;
-                else if(count_state==4'd1)    /* remain in FETCH */
+                else if(count_state==3'd1)    /* remain in FETCH */
                     state <= FETCH;
             end
             DECODE:
             begin
-                if(count_state==4'd3)begin
+                if(count_state==3'd3)begin
 
                     if(flag_R_type_wire ==1'b1)begin /* Execute a R type operation */
                     /* the decoder already determined the needed ALU operation */
@@ -207,29 +207,31 @@ always @(posedge clk or negedge reset) begin
                         state <= FETCH;     /* Should not reach this point */                    
                     end
 
-                end else if(count_state==4'd2)  /* remain in DECODE */
+                end else if(count_state==3'd2)  /* remain in DECODE */
                     state <= DECODE;
             end
 
             EXECUTE:            /* count_state = 3 */
             begin
-                if(count_state==4'd4)
+                if(count_state==3'd4)
                     state<=WRITE_BACKTOREG;          
-                else if(count_state==4'd3)          /* Remain in EXECUTE */
+                else if(count_state==3'd3)          /* Remain in EXECUTE */
                     state <= EXECUTE;
             end
             WRITE_BACKTOREG:        /* Write to RAM */ /* Request to write back to register file */
             begin
 
-                if(count_state==4'd1)       /* Go and do another stuff from the beginning*/
-                    state <= FETCH;
-                else if(count_state == 4'd4)      /* Remain in WRITE_BACKTOREG */
+//                if(count_state==3'd1)       /* Go and do another stuff from the beginning*/
+//                    state <= FETCH;
+                if(count_state==3'd5)       /* Go and do another stuff from the beginning*/
+                    state <= DUMMY;
+                else if(count_state == 3'd4)      /* Remain in WRITE_BACKTOREG */
                     state <= WRITE_BACKTOREG;
             end
             GET_EFFECTIVE_ADDR:         /* count_state = 3 */
             begin
                 /* Get the effective address for Store operation */
-                if(count_state==4'd4)begin
+                if(count_state==3'd4)begin
                     
                     if(flag_sw_wire == 1'b1)begin    /* Check if store instruction was requested*/                     
                         state <= STORE;     /* Write to memory from reg */
@@ -238,36 +240,35 @@ always @(posedge clk or negedge reset) begin
                         state <= LOAD;      /* Read from memory to reg */
                     end
 
-                end else if(count_state == 4'd3)
+                end else if(count_state == 3'd3)
                     state <=GET_EFFECTIVE_ADDR;
             end
 
             STORE:      /* Save from a register to memory. Write to memory from reg  */
             begin
-                if(count_state==4'd5)
+                if(count_state==3'd5)
                     state <= DUMMY;
-                else if(count_state == 4'd4)
+                else if(count_state == 3'd4)
                     state <=STORE;
             end
             DUMMY:
             begin
-                if(count_state==4'd1)
+                if(count_state==3'd1)
                     state <= FETCH;
-                else if(count_state == 4'd5)
+                else if(count_state == 3'd5)
                     state <=DUMMY;
             end
             LOAD:       /* Copy from memory to a register */
             begin
-//                if(count_state==4'd1)
-//                    state <= FETCH;
-                if(count_state==4'd5)
+
+                if(count_state==3'd5)
                     state <= DUMMY;
-                else if(count_state == 4'd4)
+                else if(count_state == 3'd4)
                     state <=LOAD;
             end
             BRANCH_EQUAL_GET_ADDR:         /* count_state = 3 */
             begin
-                if(count_state==4'd4)
+                if(count_state==3'd4)
                     
                     case(Opcode)
                         6'b000100:      /* Beq - 0x04 */
@@ -290,22 +291,29 @@ always @(posedge clk or negedge reset) begin
             end
             BRANCH_EQUAL_COMPARE:
             begin
-                if(count_state==4'd1)
-                    state <= FETCH;
+                if(count_state==3'd5)
+                    state <= DUMMY;
                 else if(state == 4'd4)
                     state <=BRANCH_EQUAL_COMPARE;
-            end 
+            end
+            NOTBRANCH_EQUAL_COMPARE:
+            begin
+                if(count_state==3'd5)
+                    state <= DUMMY;
+                else if(state == 4'd4)
+                    state <=NOTBRANCH_EQUAL_COMPARE;              
+            end
             EXEC_JUMP:
             begin
-                if(count_state==4'd4)
+                if(count_state==3'd4)
                     state <= UPDATE_PC;
                 else if(state == 4'd3)
                     state <=EXEC_JUMP;
             end
             UPDATE_PC:
             begin
-                if(count_state==4'd1)   /* @TODO: probably this should be 5  */
-                    state <= FETCH;
+                if(count_state==3'd5)   /* @TODO: probably this should be 5  */
+                    state <= DUMMY;
                 else if(state == 4'd4)
                     state <=UPDATE_PC;
             end
