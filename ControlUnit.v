@@ -258,8 +258,10 @@ always @(posedge clk or negedge reset) begin
             end
             LOAD:       /* Copy from memory to a register */
             begin
-                if(count_state==4'd1)
-                    state <= FETCH;
+//                if(count_state==4'd1)
+//                    state <= FETCH;
+                if(count_state==4'd5)
+                    state <= DUMMY;
                 else if(count_state == 4'd4)
                     state <=LOAD;
             end
@@ -316,7 +318,7 @@ always @(posedge clk or negedge reset) begin
     end 
 end
 
-always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero)begin 
+always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_lw_wire,flag_sw_wire)begin 
     case(state)
         IDLE:
         begin
@@ -373,7 +375,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero)begin
             MemWrite_reg    =0;     /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
             Mem_select_reg  =0;     /* Memory selection: 0=ROM,  1=RAM*/
             IRWrite_reg     <=0;     /* not relevant*/
-            DataWrite_reg   =0;     /* not relevant */
+            DataWrite_reg   <=0;     /* if it is LW save the data */
             MemtoReg_reg    =0;	    /* not relevant */
             RegDst_reg      = destination_indicator_wire;     /* A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
             RegWrite_reg    <=0;     /* not relevant*/
@@ -488,9 +490,11 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero)begin
             //PC_En_reg       =0; /* not relevant */
             IorD_reg        =0; /* not relevant */
             MemWrite_reg    =0; /* not relevant */
-            Mem_select_reg  =0; /* not relevant */
+            Mem_select_reg  =0; /* not relevant */            
+            //Mem_select_reg  <=flag_lw_wire|flag_sw_wire; /* not relevant */
             IRWrite_reg     =0; /* not relevant */
-            DataWrite_reg   =0; /* not relevant */
+            //DataWrite_reg   <=flag_lw_wire; /* not relevant */
+            DataWrite_reg   <=0; /* not relevant */
             MemtoReg_reg    =0;	/* not relevant */
             RegDst_reg      =0; /* not relevant */
             RegWrite_reg    <=0; /* not relevant */
@@ -530,9 +534,9 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero)begin
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
             IRWrite_reg     =0; /* not relevant */
             DataWrite_reg   =0; /* not relevant */
-            MemtoReg_reg    =0;	/* not relevant */
+            MemtoReg_reg    <=flag_lw_wire;	/* if lw operation select data from ram */
             RegDst_reg      =0; /* not relevant */
-            RegWrite_reg    <=0; /* not relevant */
+            RegWrite_reg    <=flag_lw_wire; /* nif lw operation enable the FF writing */
             RDx_FF_en_reg   =0; /* not relevant */
             ALUSrcB_reg     <=0; /* not relevant */
             ALUControl_reg  =0; /* not relevant */

@@ -8,7 +8,7 @@
 module MIPS_jump_TB;
 
 localparam DATA_WIDTH = 32;
-    localparam ADDR_WIDTH = 8;
+    localparam ADDR_WIDTH = 32;
 	reg clk=0; 				        /* clk signal */
 	reg reset; 			            /* async signal to reset */
 	/* Test signals */

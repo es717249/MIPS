@@ -8,7 +8,7 @@
 module MIPS_new_TB;
 
     localparam DATA_WIDTH = 32;
-    localparam ADDR_WIDTH = 8;
+    localparam ADDR_WIDTH = 32;
 	reg clk=0; 				        /* clk signal */
 	reg reset; 			            /* async signal to reset */
 	/* Test signals */
@@ -190,6 +190,7 @@ initial begin
     #20 state=2;    //DECODE
     #20 state=3;    //GET EFFECTIVE ADDRESS
     #20 state=4;    //LOAD
+    #20 state=5;    //LOAD DUMMY
     
     
     /* Processing instruction 8d950004: lw  $s5,4,($t4) :load 0x1E in 0x10010000+8*/
@@ -197,12 +198,14 @@ initial begin
     #20 state=2;    //DECODE
     #20 state=3;    //GET EFFECTIVE ADDRESS
     #20 state=4;    //LOAD
+    #20 state=5;    //LOAD DUMMY
     
     /* Processing instruction 8d960008: lw  $s6,8,($t4) :load 0x10 in 0x10010000+C*/
     #20 state=1;    //FETCH
     #20 state=2;    //DECODE
     #20 state=3;    //GET EFFECTIVE ADDRESS
     #20 state=4;    //LOAD
+    #20 state=5;    //LOAD DUMMY
 
     //Verify content of RAM
 

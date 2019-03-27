@@ -43,6 +43,7 @@ module MemoryUnit
 	begin		
 		$readmemh("Test_MIPS_1inst.hex", rom);	//Test1: instructions R,I,SW,LW,BEQ,BNE
 		//$readmemh("Test_MIPS_jump.hex", rom);	//Test2: instructions jump
+		//$readmemh("Test_MIPS_SW_LW.hex", rom);	//Test3: instructions sw, lw
 	end
 
 	always @ (posedge clk)
@@ -55,10 +56,16 @@ module MemoryUnit
 	end
 
 	/* Write to RAM memory at the given address (addr) with the given data (data_temp)*/
-	always@(data_temp,addr)begin
-		ram[addr] <= data_temp;		
+//	always@(data_temp,addr)begin
+//		ram[addr] <= data_temp;		
+//	end
+	
+	always@(posedge clk)begin
+		if(we)
+			ram[addr] <= wdata;		
 	end
 	
+
 	/* Continuous assigment implies read returns new data */
 	assign q_ram = ram[addr];	
 	assign q_rom = rom[addr];	

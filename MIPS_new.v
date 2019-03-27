@@ -95,23 +95,57 @@ wire [DATA_WIDTH-1:0] PC_source;	/* signal from mux to PC register */
 wire [DATA_WIDTH-1:0] PC_source_tmp;	/* signal from mux to PC register */
 wire PC_En_wire;
 wire [DATA_WIDTH-1:0] mux_address_Data_out;
+wire [DATA_WIDTH-1 : 0]ALUOut_Translated;		//Registerd output of ALU
 /***************************************************************
 Signals for the Virtual Memory unit 
 ***************************************************************/
 wire aligment_error_wire;
+wire aligment_error_RAM_wire;
 wire [DATA_WIDTH-1:0] translated_addr_wire;
 wire [DATA_WIDTH-1:0] MIPS_address;
+wire [DATA_WIDTH-1:0] MIPS_RAM_address;
+
+/***************************************************************
+Signals for GPIO
+***************************************************************/
+wire gpio_enable;
+wire [7:0] gpio_out;
+
+
+GPIO_controller #(
+	.DATA_WIDTH(8),
+	.ADDR_WIDTH(32)
+)GPIO
+(
+	//.addr_rom(PC_current),
+	.addr_ram(ALUOut),
+	.wdata(B[7:0]),
+	.clk(clk),
+	.reset(reset),
+	.enable_write(gpio_enable),
+	.register_out(gpio_out)
+);
+
 
 VirtualMemory_unit #(
 	.ADDR_WIDTH(DATA_WIDTH)
 )VirtualMem
 (
-	.address(mux_address_Data_out),
+	.address(PC_current),
 	.translated_addr(translated_addr_wire),
 	.MIPS_address(MIPS_address),
 	.aligment_error(aligment_error_wire)
 );
 
+VirtualAddress_RAM #(
+	.ADDR_WIDTH(DATA_WIDTH)
+)VirtualRAM_Mem
+(
+	.address(ALUOut),
+	.translated_addr(ALUOut_Translated),
+	.MIPS_address(MIPS_RAM_address),
+	.aligment_error(aligment_error_RAM_wire)
+);
 
 //####################     Control unit   #######################
 ControlUnit CtrlUnit(
@@ -174,9 +208,11 @@ mux2to1#(.Nbit(DATA_WIDTH))
 MUX_for_PC
 (
 	.mux_sel(IorD_wire),				//@Control signal: Instruction or Data selection. 1=from ALU
-	.data1(PC_current), 			//0=Comes from 'PC_Reg'
-	.data2(ALUOut), 					//1=From ALUOut signal 
-	.Data_out(mux_address_Data_out) //this have the Address for Memory input
+	//.data1(PC_current), 				//0=Comes from 'PC_Reg'
+	.data1(translated_addr_wire), 				//0=Comes from 'PC_Reg'	
+	//.data2(ALUOut), 					//1=From ALUOut signal 	
+	.data2(ALUOut_Translated), 					//1=From ALUOut signal 
+	.Data_out(mux_address_Data_out) 	//this have the Address for Memory input
 );
 
 
@@ -187,7 +223,8 @@ MemoryUnit #(
 )MemoryMIPS
 (
     /* inputs */
-	.addr(translated_addr_wire),	//Address to read from ROM
+	//.addr(translated_addr_wire),	//Address to read from ROM
+	.addr(mux_address_Data_out),	//Address to read from ROM
 	.wdata(B),			            //data to write to RAM
 	.we(MemWrite_wire),				//@Control signal: enable
 	.clk(clk), 						//clock signal
