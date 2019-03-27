@@ -26,10 +26,6 @@ add wave -noupdate -radix unsigned /MIPS_swlw_TB/testing_unit/VirtualRAM_Mem/tra
 add wave -noupdate -color Coral -radix hexadecimal /MIPS_swlw_TB/testing_unit/VirtualRAM_Mem/MIPS_address
 add wave -noupdate -radix hexadecimal /MIPS_swlw_TB/testing_unit/VirtualRAM_Mem/aligment_error
 add wave -noupdate -divider GPIO
-add wave -noupdate -radix hexadecimal /MIPS_swlw_TB/testing_unit/GPIO/addr_ram
-add wave -noupdate /MIPS_swlw_TB/testing_unit/GPIO/wdata
-add wave -noupdate -radix unsigned /MIPS_swlw_TB/testing_unit/GPIO/enable_write
-add wave -noupdate -radix hexadecimal /MIPS_swlw_TB/testing_unit/GPIO/register_out
 add wave -noupdate -divider Reg_forInstruction
 add wave -noupdate /MIPS_swlw_TB/testing_unit/Reg_forInstruction/clk
 add wave -noupdate /MIPS_swlw_TB/testing_unit/Reg_forInstruction/reset
@@ -151,7 +147,7 @@ add wave -noupdate -color Red -radix unsigned /MIPS_swlw_TB/testing_unit/CtrlUni
 add wave -noupdate /MIPS_swlw_TB/testing_unit/CtrlUnit/PC_En
 add wave -noupdate -color Yellow /MIPS_swlw_TB/testing_unit/CtrlUnit/state
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {350 ps} 0}
+WaveRestoreCursors {{Cursor 1} {822 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 170
 configure wave -valuecolwidth 269
@@ -167,4 +163,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {2196 ps} {2538 ps}
+WaveRestoreZoom {704 ps} {2211 ps}

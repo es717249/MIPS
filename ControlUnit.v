@@ -46,7 +46,8 @@ module ControlUnit
     output RDx_FF_en,
     output ALUresult_en,
     output PC_En,
-    output flag_J_type_out);
+    output flag_J_type_out,
+    output flag_sw_out);
 
 //###################### Variables ########################
 
@@ -98,7 +99,7 @@ assign DataWrite = DataWrite_reg;
 assign RDx_FF_en = RDx_FF_en_reg;
 assign ALUresult_en = ALUresult_en_reg;
 assign flag_J_type_out = flag_J_type_wire;
-
+assign flag_sw_out = flag_sw_wire;
 //####################     Assignations   #######################
 //assign AND1_wire = Branch & Zero;
 //assign PC_En  = AND1_wire | PCWrite | PC_En_reg;    /* Signal for Program counter enable register */

@@ -18,6 +18,7 @@ module MIPS_new
 Signals for Memory unit
 ***************************************************************/
 wire [DATA_WIDTH-1 : 0] B;	//data from Reg file RD2 to 'mux4_1_forALU'
+wire [DATA_WIDTH-1 : 0] WD_input;	//output of demux module to data input of Memory unit
 wire [DATA_WIDTH-1 : 0] A;	//data from Reg file RD1 to MUX to ALU
 wire [DATA_WIDTH-1:0]Mmemory_output;
 wire MemWrite_wire;			//@Control signal: Write enable for the memory unit
@@ -109,9 +110,12 @@ wire [DATA_WIDTH-1:0] MIPS_RAM_address;
 Signals for GPIO
 ***************************************************************/
 wire gpio_enable;
-wire [7:0] gpio_out;
+wire [7:0] gpio_data_out;
+wire sw_inst_detector;
+wire demuxSelector_wire;
+wire [DATA_WIDTH-1:0]Gpio_data_input;
 
-
+//####################     GPIO controller unit   #######################
 GPIO_controller #(
 	.DATA_WIDTH(8),
 	.ADDR_WIDTH(32)
@@ -119,14 +123,27 @@ GPIO_controller #(
 (
 	//.addr_rom(PC_current),
 	.addr_ram(ALUOut),
-	.wdata(B[7:0]),
+	.wdata( Gpio_data_input[7:0]),
 	.clk(clk),
 	.reset(reset),
-	.enable_write(gpio_enable),
-	.register_out(gpio_out)
+	.enable_sw(sw_inst_detector),
+	.gpio_data_out(gpio_data_out),
+	.demuxSelector(demuxSelector_wire)
 );
 
+//####################     Data bus Demuxplexer  #######################
+Demux1to2 #(
+    .DATA_LENGTH(DATA_WIDTH)
+)demux_MemUnit_or_GPIO(
+	// Input Ports
+	.Demux_Input(B),
+	.Selector(demuxSelector_wire),
+    //output Ports
+    .Dataout0(WD_input),
+    .Dataout1(Gpio_data_input)
+);
 
+//####################     ROM Address translator unit   #######################
 VirtualMemory_unit #(
 	.ADDR_WIDTH(DATA_WIDTH)
 )VirtualMem
@@ -137,6 +154,7 @@ VirtualMemory_unit #(
 	.aligment_error(aligment_error_wire)
 );
 
+//####################     RAM Address translator unit   #######################
 VirtualAddress_RAM #(
 	.ADDR_WIDTH(DATA_WIDTH)
 )VirtualRAM_Mem
@@ -174,7 +192,8 @@ ControlUnit CtrlUnit(
 	.RDx_FF_en(RDx_FF_en_wire),
 	.ALUresult_en(ALUresult_en_wire),
 	.PC_En(PC_En_wire),
-	.flag_J_type_out(flag_Jtype_wire)
+	.flag_J_type_out(flag_Jtype_wire),
+	.flag_sw_out(sw_inst_detector)
 );
 
 //####################     Address preparation   #######################
@@ -225,7 +244,8 @@ MemoryUnit #(
     /* inputs */
 	//.addr(translated_addr_wire),	//Address to read from ROM
 	.addr(mux_address_Data_out),	//Address to read from ROM
-	.wdata(B),			            //data to write to RAM
+	//.wdata(B),			            //data to write to RAM
+	.wdata(WD_input),			            //data to write to RAM
 	.we(MemWrite_wire),				//@Control signal: enable
 	.clk(clk), 						//clock signal
 	.mem_sel(mem_sel_wire),			//@Control signal: memory selector: 0=ROM, 1=RAM

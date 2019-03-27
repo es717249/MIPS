@@ -41,9 +41,9 @@ module MemoryUnit
 
 	initial   //no es sintetizable pero le ayuda al sintetizador para inferir una memoria rom y para inicializarla
 	begin		
-		$readmemh("Test_MIPS_1inst.hex", rom);	//Test1: instructions R,I,SW,LW,BEQ,BNE
+		//$readmemh("Test_MIPS_1inst.hex", rom);	//Test1: instructions R,I,SW,LW,BEQ,BNE
 		//$readmemh("Test_MIPS_jump.hex", rom);	//Test2: instructions jump
-		//$readmemh("Test_MIPS_SW_LW.hex", rom);	//Test3: instructions sw, lw
+		$readmemh("Test_MIPS_SW_LW.hex", rom);	//Test3: instructions sw, lw
 	end
 
 	always @ (posedge clk)
