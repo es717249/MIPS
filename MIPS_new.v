@@ -11,7 +11,8 @@ module MIPS_new
 (
 	input clk, 					/* clk signal */
 	input reset, 				/* async signal to reset */	
-	input [2:0]count_state 		/* 7 states */
+	input [2:0]count_state, 		/* 7 states */
+	output [7:0] gpio_data_out
 );
 
 /***************************************************************
@@ -20,7 +21,7 @@ Signals for Memory unit
 wire [DATA_WIDTH-1 : 0] B;	//data from Reg file RD2 to 'mux4_1_forALU'
 wire [DATA_WIDTH-1 : 0] WD_input;	//output of demux module to data input of Memory unit
 wire [DATA_WIDTH-1 : 0] A;	//data from Reg file RD1 to MUX to ALU
-wire [DATA_WIDTH-1:0]Mmemory_output;
+wire [DATA_WIDTH-1:0]Mmemory_output/* synthesis keep */;
 wire MemWrite_wire;			//@Control signal: Write enable for the memory unit
 wire IRWrite_wire;			//@Control signal: Enable signal for FF to let the instruction pass to 'Prepare inst module'
 wire DataWrite_wire;		//@Control signal: Enable signal for FF to let the data pass to Mux to 'Register File'
@@ -62,7 +63,7 @@ wire [DATA_WIDTH-1:0] sign_extended_out;
 /***************************************************************
 Signals for Address preparation module
 ***************************************************************/
-wire [DATA_WIDTH-1:0]Instruction_fetched; 	//signal from FF to Register files to indicate instruction
+wire [DATA_WIDTH-1:0]Instruction_fetched/*synthesis keep*/; 	//signal from FF to Register files to indicate instruction
 wire [5 :0 ]opcode_wire;							//Opcode field of the instruction
 wire [4 : 0]rs_wire;		 			//source 1	(R-I type)
 wire [4 : 0]rt_wire;		 			//source 2	(R-I type)
@@ -91,8 +92,8 @@ wire flag_Jtype_wire;
 Signals to update Program Counter
 ***************************************************************/
 wire PCSrc_wire;					/* Signal for a mux to select the source of PC */
-wire [DATA_WIDTH-1:0]PC_current;					/* Current Program counter */
-wire [DATA_WIDTH-1:0] PC_source;	/* signal from mux to PC register */
+wire [DATA_WIDTH-1:0]PC_current/*synthesis keep*/;					/* Current Program counter */
+wire [DATA_WIDTH-1:0] PC_source/*synthesis keep*/;	/* signal from mux to PC register */
 wire [DATA_WIDTH-1:0] PC_source_tmp;	/* signal from mux to PC register */
 wire PC_En_wire;
 wire [DATA_WIDTH-1:0] mux_address_Data_out;
@@ -103,14 +104,14 @@ Signals for the Virtual Memory unit
 wire aligment_error_wire;
 wire aligment_error_RAM_wire;
 wire [DATA_WIDTH-1:0] translated_addr_wire;
-wire [DATA_WIDTH-1:0] MIPS_address;
-wire [DATA_WIDTH-1:0] MIPS_RAM_address;
+wire [DATA_WIDTH-1:0] MIPS_address/*synthesis keep*/;
+wire [DATA_WIDTH-1:0] MIPS_RAM_address/*synthesis keep*/;
 
 /***************************************************************
 Signals for GPIO
 ***************************************************************/
 wire gpio_enable;
-wire [7:0] gpio_data_out;
+//wire [7:0] gpio_data_out;
 wire sw_inst_detector;
 wire demuxSelector_wire;
 wire [DATA_WIDTH-1:0]Gpio_data_input;

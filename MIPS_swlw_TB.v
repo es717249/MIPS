@@ -17,7 +17,8 @@ module MIPS_swlw_TB;
     reg [3:0]state;
     wire flag;
     wire[2:0] counter;
-    
+    wire [7:0] gpio_data_out;
+
 MIPS_new
 #
 (
@@ -29,7 +30,8 @@ MIPS_new
 	.reset(reset), 			        /* async signal to reset */
 	/* Test signals */
     //.count_state(state)
-    .count_state(counter)
+    .count_state(counter),
+    .gpio_data_out(gpio_data_out)
 );
 
 CounterwFlag_P 

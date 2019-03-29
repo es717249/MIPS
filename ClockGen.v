@@ -1,7 +1,7 @@
 /************************************************************************************************
-Name: CounterwFlag_P.v
-Description: customized counter which counts up to MAXIMUM_VALUE and raises a flag when it happens,
-then it gets back to 1.
+Name: ClockGen.v
+Description: Counter which counts up to MAXIMUM_VALUE and raises a flag when it happens,
+then it restarts the counting.
 Parameter:
 *	MAXIMUM_VALUE = Number of data samples to count
 *	NBITS = Number of bits required to count to the maximum value
@@ -18,7 +18,7 @@ Autor: Nétor Damián García
 Fecha: Primavera 2018
 ************************************************************************************************/
 
-module CounterwFlag_P
+module ClockGen
 #(
 	// Parameter Declarations
 	parameter MAXIMUM_VALUE = 5, 
@@ -30,9 +30,11 @@ module CounterwFlag_P
 	input reset,
 	input enable,	
 	// Output Ports
-	output flag,
-	output[NBITS-1:0] counter
+	output flag
+	//output[NBITS-1:0] counter
 );
+
+
 
 reg flag_reg=0;
 reg [NBITS-1:0] counter_reg=0;
@@ -42,11 +44,12 @@ reg [NBITS-1:0] counter_reg=0;
 	always@(posedge clk or negedge reset) begin
 		if (reset == 1'b0) begin 
 			counter_reg <= {NBITS{1'b0}};			
+			flag_reg <= 0;
 		end else begin					
 				if (enable==1'b1)begin 
 					if(counter_reg == MAXIMUM_VALUE-1)begin						
-						//counter_reg <= { NBITS{1'b0} };
-						counter_reg <= 1;
+						counter_reg <= { NBITS{1'b0} };
+						flag_reg <= ~flag_reg;
 					end else begin 
 						counter_reg <= counter_reg + 1'b1;						
 					end									
@@ -56,17 +59,8 @@ reg [NBITS-1:0] counter_reg=0;
 
 /*********************************************************************************************/
 
-
-always@(counter_reg)begin 
-	if(counter_reg == 0)begin
-		flag_reg =1'b1;
-	end else 
-		flag_reg =1'b0;
-		
-end 
-
 assign flag = flag_reg;
-assign counter = counter_reg;
+//assign counter = counter_reg;
 /*********************************************************************************************/
 
 /*********************************************************************************************/

@@ -11,14 +11,16 @@ module MemoryUnit
 (
 	parameter DATA_WIDTH=32, 		//data length
 	parameter ADDR_WIDTH=8			//bits to address the elements
+	//parameter ADDR_WIDTH=6			//bits to address the elements
 )
 (
 	//inputs
-	input [(DATA_WIDTH-1):0] addr,	//Address for rom instruction mem. Program counter
+	//input [(DATA_WIDTH-1):0] addr,	//Address for rom instruction mem. Program counter
+	input [(ADDR_WIDTH-1):0] addr,	//Address for rom instruction mem. Program counter
 	input [(DATA_WIDTH-1):0] wdata,	//Write Data for RAM data memory
-	input we,						//Write enable signal
-	input clk, 
-	input mem_sel,					//Select either rom or ram
+	input we,						//Write enable signal - sw9
+	input clk, 						//sw8
+	input mem_sel,					//Select either rom or ram  -sw7
 	//output
 	output [(DATA_WIDTH-1):0] q
 );
@@ -27,8 +29,8 @@ module MemoryUnit
 	reg [DATA_WIDTH-1:0] rom[2**ADDR_WIDTH-1:0]; 
 
 	// Declare the RAM variable
-	//reg [DATA_WIDTH-1:0] ram[2**ADDR_WIDTH-1:0];
-	reg [DATA_WIDTH-1:0] ram[2**8-1:0];
+	reg [DATA_WIDTH-1:0] ram[2**ADDR_WIDTH-1:0];
+	//reg [DATA_WIDTH-1:0] ram[2**8-1:0];
 	
 	wire [DATA_WIDTH-1:0]	q_rom;		//wire to redirect ROM value to the output
 	wire [DATA_WIDTH-1:0]	q_ram;		//wire to redirect RAM value to the output
@@ -41,9 +43,10 @@ module MemoryUnit
 
 	initial   //no es sintetizable pero le ayuda al sintetizador para inferir una memoria rom y para inicializarla
 	begin		
-		//$readmemh("Test_MIPS_1inst.hex", rom);	//Test1: instructions R,I,SW,LW,BEQ,BNE
+		$readmemh("Test_MIPS_1inst.hex", rom);	//Test1: instructions R,I,SW,LW,BEQ,BNE
 		//$readmemh("Test_MIPS_jump.hex", rom);	//Test2: instructions jump
-		$readmemh("Test_MIPS_SW_LW.hex", rom);	//Test3: instructions sw, lw
+		//$readmemh("Test_MIPS_SW_LW.hex", rom);	//Test3: instructions sw, lw
+		//$readmemh("testmem.hex", rom);	//Test3: memory
 	end
 
 	always @ (posedge clk)
