@@ -4,10 +4,10 @@ module decode_instruction
 	input [5:0] opcode_reg,
 	input [5:0] funct_reg,
 	/* output */
-	output destination_indicator,	//1: R type, 0: I type
+	output [1:0] destination_indicator,	//1: R type, 0: I type
 	output [3:0]ALUControl,
 	output flag_sw,
-	output flag_lw,
+	output [1:0] flag_lw,
 	output flag_R_type,				//R type =1
 	output flag_I_type,				//I type =1
 	output [1:0]flag_J_type,				//J type =1
@@ -20,10 +20,10 @@ module decode_instruction
 reg [1:0]mux4selector_reg;
 reg mult_operation_reg;
 reg mflo_flag_reg;
-reg destination_reg_indicator; 		//1: R type (rd), 0: I type (rt)
+reg [1:0] destination_reg_indicator; 		//1: R type (rd), 0: I type (rt)
 reg [3:0]ALUControl_reg;
 reg flag_sw_reg;
-reg flag_lw_reg;
+reg [1:0] flag_lw_reg;
 reg flag_R_type_reg;
 reg flag_I_type_reg;
 reg [1:0]flag_J_type_reg;
@@ -38,7 +38,7 @@ always @(opcode_reg,funct_reg) begin
 		flag_R_type_reg = 1;	//Indicate that a R type instruction was detected
 		flag_I_type_reg = 0;	//Not an I type instruction
 		//flag_J_type_reg = 0;	//Not a J type instruction
-		flag_lw_reg		=1'b0;
+		flag_lw_reg		=2'd0;
 		flag_sw_reg		=1'b0;
 
 		case(funct_reg)
@@ -119,7 +119,7 @@ always @(opcode_reg,funct_reg) begin
 			begin
 			  	flag_I_type_reg = 0;	//Not an I type instruction
 				flag_J_type_reg = 1;	//J type instruction
-				flag_lw_reg=1'b0;		//not relevant
+				flag_lw_reg=2'd0;		//not relevant
 				flag_sw_reg=1'b0;		//not relevant
 				destination_reg_indicator=0;	//not relevant
 				ALUControl_reg<=4'd0;			//not relevant
@@ -129,9 +129,9 @@ always @(opcode_reg,funct_reg) begin
 			begin
 				flag_I_type_reg = 0;	//Not an I type instruction
 				flag_J_type_reg = 1;	//J type instruction
-				flag_lw_reg=1'b0;		//not relevant
+				flag_lw_reg=2'd2;		//this will help to use a Mux for WD3 in register file to pass new jump address on JAL inst
 				flag_sw_reg=1'b0;		//not relevant
-				destination_reg_indicator=0;	//not relevant
+				destination_reg_indicator=2;	//Use the 3rd source: 5'd31 for $ra register
 				ALUControl_reg<=4'd0;			//not relevant
 				mux4selector_reg=2'd0;			//not relevant
 			end
@@ -140,7 +140,7 @@ always @(opcode_reg,funct_reg) begin
 			begin
 				destination_reg_indicator=0;	//destination will be rt
 				ALUControl_reg<=4'd2;			//operation add 				
-				flag_lw_reg=1'b0;
+				flag_lw_reg=2'd0;
 				flag_sw_reg=1'b0;		
 				mux4selector_reg=2'd0;	
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
@@ -151,7 +151,7 @@ always @(opcode_reg,funct_reg) begin
 				/* Edit these values */
 				destination_reg_indicator=0;	//destination will be rt
 				ALUControl_reg<=4'd2;			//operation add 				
-				flag_lw_reg=1'b0;
+				flag_lw_reg=2'd0;
 				flag_sw_reg=1'b0;		
 				mux4selector_reg=2'd0;	
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
@@ -163,7 +163,7 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=0;	//destination will be rt
 				ALUControl_reg<=4'd2;			//operation add 				
 				mux4selector_reg=2'd2;
-				flag_lw_reg=1'b0;
+				flag_lw_reg=2'd0;
 				flag_sw_reg=1'b0;
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
@@ -174,7 +174,7 @@ always @(opcode_reg,funct_reg) begin
 				ALUControl_reg<=4'd12;			//operation slti
 				/*@TODO: The operation subtract could be used, and the flag negative could be used to compare the values */
 				mux4selector_reg=2'd2;			//select immediate value
-				flag_lw_reg=1'b0;
+				flag_lw_reg=2'd0;
 				flag_sw_reg=1'b0;
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
@@ -184,7 +184,7 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=0;	//destination will be rt
 				ALUControl_reg<=4'd5;			//operation and 	
 				mux4selector_reg=2'd2;			
-				flag_lw_reg=1'b0;
+				flag_lw_reg=2'd0;
 				flag_sw_reg=1'b0;
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
@@ -194,7 +194,7 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=0;	//destination will be rt
 				ALUControl_reg<=4'd6;			//operation or
 				mux4selector_reg=2'd2;			
-				flag_lw_reg=1'b0;
+				flag_lw_reg=2'd0;
 				flag_sw_reg=1'b0;
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
@@ -204,7 +204,7 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=0;	//destination will be rt
 				ALUControl_reg<=4'b1011;			//shift <<16 operation
 				//create a flag so we can pass to write back 
-				flag_lw_reg=1'b0;
+				flag_lw_reg=2'd0;
 				flag_sw_reg=1'b1;	
 				mux4selector_reg=2'd2;	
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
@@ -214,7 +214,7 @@ always @(opcode_reg,funct_reg) begin
 			begin
 				destination_reg_indicator=0;	//destination will be rt
 				ALUControl_reg<=4'd2;			//
-				flag_lw_reg=1'b1;
+				flag_lw_reg=2'd1;
 				flag_sw_reg=1'b0;		
 				mux4selector_reg=2'd0;		
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
@@ -225,7 +225,7 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=0;	//destination will be rt
 				ALUControl_reg<=4'd2;			//operation add 				
 				//create a flag so we can pass to write back 
-				flag_lw_reg=1'b0;
+				flag_lw_reg=2'd0;
 				flag_sw_reg=1'b1;	
 				mux4selector_reg=2'd0;	
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
@@ -237,7 +237,7 @@ always @(opcode_reg,funct_reg) begin
 			begin
 				ALUControl_reg<=4'd2;//operation add  /**** CHECK **/
 				destination_reg_indicator=0;//destination will be rt
-				flag_lw_reg=1'b0;
+				flag_lw_reg=2'd0;
 				flag_sw_reg=1'b0;	
 				mux4selector_reg=2'd0;
 				flag_I_type_reg = 1;	//Indicate it is I type instruction

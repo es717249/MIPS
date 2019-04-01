@@ -32,8 +32,8 @@ module ControlUnit
     output IorD,
     output MemWrite,
     output IRWrite,
-    output RegDst,
-    output MemtoReg,
+    output [1:0] RegDst,
+    output [1:0] MemtoReg,
     output PCWrite,
     output Branch,
     output PCSrc,
@@ -56,8 +56,8 @@ module ControlUnit
 reg [3:0]state;     //8 available states
 wire AND1_wire;
 wire flag_sw_wire;
-wire flag_lw_wire;
-wire destination_indicator_wire;
+wire [1:0] flag_lw_wire;
+wire [1:0]destination_indicator_wire;
 wire [1:0]ALUSrcB_wire;
 wire flag_R_type_wire;
 wire flag_I_type_wire;
@@ -69,8 +69,8 @@ wire mflo_flag_wire;
 reg IorD_reg;
 reg MemWrite_reg;
 reg IRWrite_reg;
-reg RegDst_reg;
-reg MemtoReg_reg;
+reg [1:0] RegDst_reg;
+reg [1:0] MemtoReg_reg;
 reg PCWrite_reg;
 reg Branch_reg;
 reg PCSrc_reg;
@@ -259,7 +259,7 @@ always @(posedge clk or negedge reset) begin
                     if(flag_sw_wire == 1'b1)begin    /* Check if store instruction was requested*/                     
                         state <= STORE;     /* Write to memory from reg */
                     end 
-                    else if(flag_lw_wire==1'b1)begin    /* Check if Load instruction was requested */                        
+                    else if(flag_lw_wire==2'd1)begin    /* Check if Load instruction was requested */                        
                         state <= LOAD;      /* Read from memory to reg */
                     end
 
@@ -411,9 +411,11 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =0;     /* Memory selection: 0=ROM,  1=RAM*/
             IRWrite_reg     <=0;     /* not relevant*/
             DataWrite_reg   <=0;     /* if it is LW save the data */
-            MemtoReg_reg    =0;	    /* not relevant */
+            //MemtoReg_reg    =0;	    /* not relevant */
+            MemtoReg_reg    <=flag_lw_wire;	    /* not relevant */            
             RegDst_reg      = destination_indicator_wire;     /* A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
             RegWrite_reg    <=0;     /* not relevant*/
+            //RegWrite_reg    <=flag_lw_wire[1]; /* save for JAL operation */
             RDx_FF_en_reg   =1;     /* FF RD1 to SrcA ALU (execution) and from RD2 to MUX4:1*/
             ALUSrcB_reg     <= ALUSrcB_wire;     /* not relevant */
             ALUControl_reg  <= ALUControl_wire;     /* not relevant */
@@ -450,7 +452,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCSrc_reg       =0; /* not relevant */
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
-            mult_operation_reg = mult_operation_wire ;
+            mult_operation_reg = 0;//mult_operation_wire ;
             mflo_flag_reg = 0;
         end
         EXEC_JUMP:
@@ -460,9 +462,12 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =0; /* not relevant */
             IRWrite_reg     =0; /* not relevant */
             DataWrite_reg   =0; /* not relevant */
-            MemtoReg_reg    =0;	/* not relevant */
+            //MemtoReg_reg    =0;	/* not relevant */
+            MemtoReg_reg    =flag_lw_wire;	/* select PC for WD3 to the register file for JAL instruction*/
+            
             RegDst_reg      =destination_indicator_wire; /* not relevant */
-            RegWrite_reg    <=0; /* not relevant */
+            //RegWrite_reg    <=0; /* not relevant */
+            RegWrite_reg    <=flag_lw_wire[1]; /* not relevant */
             RDx_FF_en_reg   =0; /* not relevant */
             ALUSrcB_reg     <=ALUSrcB_wire; /*not relevant */
             ALUControl_reg  <=ALUControl_wire; /* not relevant */
@@ -471,7 +476,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCSrc_reg       =0; /* not relevant */
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =1; /* Save the updated jump address in PC */
-            mult_operation_reg = mult_operation_wire;
+            //mult_operation_reg = mult_operation_wire;
+            mult_operation_reg = 0;
             mflo_flag_reg = 0;
         end
         UPDATE_PC:
@@ -521,7 +527,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCSrc_reg       =0; /* not relevant */          
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
-            mult_operation_reg = 0 ;
+            mult_operation_reg = mult_operation_wire ;
             mflo_flag_reg = mflo_flag_wire;
         end
         GET_EFFECTIVE_ADDR:     /* For sw operation */
@@ -534,8 +540,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             //PC_En_reg       =0; /* not relevant */
             IorD_reg        =0; /* not relevant */
             MemWrite_reg    =0; /* not relevant */
-            Mem_select_reg  =0; /* not relevant */            
-            //Mem_select_reg  <=flag_lw_wire|flag_sw_wire; /* not relevant */
+            Mem_select_reg  =0; /* not relevant */
             IRWrite_reg     =0; /* not relevant */
             //DataWrite_reg   <=flag_lw_wire; /* not relevant */
             DataWrite_reg   <=0; /* not relevant */
@@ -582,9 +587,9 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
             IRWrite_reg     =0; /* not relevant */
             DataWrite_reg   =0; /* not relevant */
-            MemtoReg_reg    <=flag_lw_wire;	/* if lw operation select data from ram */
+            MemtoReg_reg    <=flag_lw_wire;	/* if 0 (normal)-data from alu, if 1(lw inst)-data from ram,if 2 (JAL inst)- data from PC*/
             RegDst_reg      =0; /* not relevant */
-            RegWrite_reg    <=flag_lw_wire; /* nif lw operation enable the FF writing */
+            RegWrite_reg    <=flag_lw_wire[0]; /* nif lw operation enable the FF writing */
             RDx_FF_en_reg   =0; /* not relevant */
             ALUSrcB_reg     <=0; /* not relevant */
             ALUControl_reg  =0; /* not relevant */

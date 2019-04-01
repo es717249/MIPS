@@ -50,7 +50,10 @@ module MemoryUnit
 		//$readmemh("Test_S0.hex", rom);	//Test5: few instructions
 		//$readmemh("Test_slti.hex", rom);	//Test6: slti instruction
 		//$readmemh("Test_mult.hex", rom);	//Test7: mult instruction
-		$readmemh("Test_jr.hex", rom);	//Test8: jr instruction
+		//$readmemh("Test_jr.hex", rom);	//Test8: jr instruction
+		//$readmemh("Test_jal.hex", rom);	//Test9: jal instruction
+		//$readmemh("Factorial.hex", rom);	//Test9: Factorial program		
+		$readmemh("Recursive_Add.hex", rom);	//Test9: Recursive addition program
 
 	end
 
