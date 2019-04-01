@@ -29,7 +29,7 @@ add wave -noupdate -divider GPIO
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/GPIO/addr_ram
 add wave -noupdate /MIPS_new_TB/testing_unit/GPIO/wdata
 add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/GPIO/enable_write
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/GPIO/register_out
+add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/GPIO/gpio_data_out
 add wave -noupdate -divider Reg_forInstruction
 add wave -noupdate /MIPS_new_TB/testing_unit/Reg_forInstruction/clk
 add wave -noupdate /MIPS_new_TB/testing_unit/Reg_forInstruction/reset

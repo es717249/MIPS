@@ -46,8 +46,10 @@ module ControlUnit
     output RDx_FF_en,
     output ALUresult_en,
     output PC_En,
-    output flag_J_type_out,
-    output flag_sw_out);
+    output [1:0]flag_J_type_out,
+    output flag_sw_out,
+    output mult_operation_out,
+    output mflo_flag_out);
 
 //###################### Variables ########################
 
@@ -59,8 +61,10 @@ wire destination_indicator_wire;
 wire [1:0]ALUSrcB_wire;
 wire flag_R_type_wire;
 wire flag_I_type_wire;
-wire flag_J_type_wire;
+wire [1:0] flag_J_type_wire;
 wire [3:0]ALUControl_wire;
+wire mult_operation_wire;
+wire mflo_flag_wire;
 
 reg IorD_reg;
 reg MemWrite_reg;
@@ -79,6 +83,8 @@ reg DataWrite_reg;
 reg RDx_FF_en_reg;
 reg ALUresult_en_reg;
 reg PC_En_reg;
+reg mult_operation_reg;
+reg mflo_flag_reg;
 
 
 
@@ -100,6 +106,8 @@ assign RDx_FF_en = RDx_FF_en_reg;
 assign ALUresult_en = ALUresult_en_reg;
 assign flag_J_type_out = flag_J_type_wire;
 assign flag_sw_out = flag_sw_wire;
+assign mult_operation_out = mult_operation_reg;
+assign mflo_flag_out = mflo_flag_reg;
 //####################     Assignations   #######################
 //assign AND1_wire = Branch & Zero;
 //assign PC_En  = AND1_wire | PCWrite | PC_En_reg;    /* Signal for Program counter enable register */
@@ -118,7 +126,9 @@ decode_instruction decoder_module
     .flag_R_type(flag_R_type_wire), 
     .flag_I_type(flag_I_type_wire), 
     .flag_J_type(flag_J_type_wire),
-	.mux4selector(ALUSrcB_wire)    //allows to select the operand for getting srcB number
+	.mux4selector(ALUSrcB_wire),    //allows to select the operand for getting srcB number
+    .mult_operation(mult_operation_wire),
+    .mflo_flag(mflo_flag_wire)
 );
 
 
@@ -148,7 +158,11 @@ always @(posedge clk or negedge reset) begin
 
                     if(flag_R_type_wire ==1'b1)begin /* Execute a R type operation */
                     /* the decoder already determined the needed ALU operation */
-                        state <= EXECUTE;                   /* Go to execute */
+                                   /* Go to execute */
+                        if(flag_J_type_wire==2'd2)begin
+                            state <= EXEC_JUMP;        
+                        end else 
+                            state <= EXECUTE;        
                     end 
                     else if(flag_I_type_wire ==1'b1)begin   /* Execute an I type operation */                    
                         
@@ -169,18 +183,22 @@ always @(posedge clk or negedge reset) begin
                             begin 
                                 state <= EXECUTE;
                             end
-                            6'b001111:      /* Lui - 0x0F */                            
+                            6'b001010:	    /* slti - 0x0A */
                             begin
+                                state<=EXECUTE;
+                            end                                     
+                            6'b001100:      /* andi - 0x0C */
+                            begin 
                                 state <= EXECUTE;
-                            end                             
+                            end                     
                             6'b001101:      /* ori - 0x0D */
                             begin 
                                 state <= EXECUTE;
                             end 
-                            6'b001100:      /* andi - 0x0C */
-                            begin 
+                            6'b001111:      /* Lui - 0x0F */                            
+                            begin
                                 state <= EXECUTE;
-                            end 
+                            end
                             6'b101011:      /* sw - 0x2B */
                             begin 
                                 state <= GET_EFFECTIVE_ADDR;        
@@ -198,9 +216,10 @@ always @(posedge clk or negedge reset) begin
                         endcase
 
                     end
-                    else if(flag_J_type_wire==1'b1)begin
+                    else if(flag_J_type_wire > 2'd0)begin /* >0 to include j and jr instructions */
                         
                         state <= EXEC_JUMP;
+                        //state <= EXECUTE;
                     
                     end  
                     else begin
@@ -214,9 +233,12 @@ always @(posedge clk or negedge reset) begin
 
             EXECUTE:            /* count_state = 3 */
             begin
-                if(count_state==3'd4)
-                    state<=WRITE_BACKTOREG;          
-                else if(count_state==3'd3)          /* Remain in EXECUTE */
+                if(count_state==3'd4)begin
+//                    if(flag_J_type_wire > 2'd0)
+//                        state <= UPDATE_PC;
+//                    else 
+                        state<=WRITE_BACKTOREG;          
+                 end else if(count_state==3'd3)          /* Remain in EXECUTE */
                     state <= EXECUTE;
             end
             WRITE_BACKTOREG:        /* Write to RAM */ /* Request to write back to register file */
@@ -313,7 +335,7 @@ always @(posedge clk or negedge reset) begin
             end
             UPDATE_PC:
             begin
-                if(count_state==3'd5)   /* @TODO: probably this should be 5  */
+                if(count_state==3'd5)   
                     state <= DUMMY;
                 else if(state == 4'd4)
                     state <=UPDATE_PC;
@@ -327,7 +349,7 @@ always @(posedge clk or negedge reset) begin
     end 
 end
 
-always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_lw_wire,flag_sw_wire)begin 
+always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_lw_wire,flag_sw_wire)begin 
     case(state)
         IDLE:
         begin
@@ -348,6 +370,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCSrc_reg       =0; /* Allows to select the PC source, 0=ALUResult, 1=ALUOut*/
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
+            mult_operation_reg = 0 ;
+            mflo_flag_reg = 0;
         end
         FETCH:
         begin
@@ -372,6 +396,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCSrc_reg       =0;     /* Allows to select the PC source, 0=ALUResult*/
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =1; /* not relevant */
+            mult_operation_reg = 0 ;
+            mflo_flag_reg = 0;
         end
         DECODE:
         begin
@@ -396,6 +422,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCSrc_reg       =0;     /* not relevant */
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
+            mult_operation_reg = 0 ;
+            mflo_flag_reg = 0;
         end
 
         EXECUTE:
@@ -422,6 +450,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCSrc_reg       =0; /* not relevant */
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
+            mult_operation_reg = mult_operation_wire ;
+            mflo_flag_reg = 0;
         end
         EXEC_JUMP:
         begin
@@ -440,14 +470,15 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             ALUresult_en_reg <=1; /* not relevant */
             PCSrc_reg       =0; /* not relevant */
             Branch_reg      =0; /* not relevant */
-            PCWrite_reg     =0; /* Save the updated jump address in PC */
+            PCWrite_reg     =1; /* Save the updated jump address in PC */
+            mult_operation_reg = mult_operation_wire;
+            mflo_flag_reg = 0;
         end
         UPDATE_PC:
         begin
             /* wait until the PC is updated. This is like doing FETCH */
 
             /* Aumenta PC, 4*/
-            //PC_En_reg       =1;     /* Control signal for the PC flip flop */
             IorD_reg        =0;     /* Selects the address: 0= program counter(fetch), 1=load operation*/
             MemWrite_reg    =0;     /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
             Mem_select_reg  =0;     /* Memory selection: 0=ROM, 1=RAM*/
@@ -465,7 +496,9 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             ALUresult_en_reg<=0;     /* Allows writing to ALU register*/
             PCSrc_reg       =0;     /* Allows to select the PC source, 0=ALUResult*/
             Branch_reg      =0; /* not relevant */
-            PCWrite_reg     =1; /* not relevant */
+            PCWrite_reg     =0; /* not relevant */
+            mult_operation_reg = 0 ;
+            mflo_flag_reg = 0;
         end 
         WRITE_BACKTOREG:
         begin
@@ -488,6 +521,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCSrc_reg       =0; /* not relevant */          
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
+            mult_operation_reg = 0 ;
+            mflo_flag_reg = mflo_flag_wire;
         end
         GET_EFFECTIVE_ADDR:     /* For sw operation */
         begin
@@ -515,6 +550,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCSrc_reg       =0; /* not relevant */
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
+            mult_operation_reg = 0 ;
+            mflo_flag_reg = 0;
         end 
         STORE:
         begin
@@ -535,6 +572,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCSrc_reg       =0; /* not relevant */
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
+            mult_operation_reg = 0 ;
+            mflo_flag_reg = 0;
         end
         DUMMY:
         begin
@@ -554,6 +593,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCSrc_reg       =0; /* not relevant */
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
+            mult_operation_reg = 0 ;
+            mflo_flag_reg = 0;
         end
         LOAD:
         begin
@@ -574,6 +615,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCSrc_reg       =0; /* not relevant */
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
+            mult_operation_reg = 0 ;
+            mflo_flag_reg = 0;
 
         end
         BRANCH_EQUAL_GET_ADDR:
@@ -596,6 +639,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCSrc_reg       =0; /* Allows to select the PC source, 0=ALUResult, 1=ALUOut*/            
             Branch_reg      =0; /* Prepare signal for branch (and operation) */
             PCWrite_reg     =0; /* Signal to enable updating Program Counter */
+            mult_operation_reg = 0 ;
+            mflo_flag_reg = 0;
         end
         BRANCH_EQUAL_COMPARE:
         begin 
@@ -617,6 +662,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             //Branch_reg      =1; /* Prepare signal for branch (and operation) */
             Branch_reg      <=Zero; /* Prepare signal for branch (and operation) */
             PCWrite_reg     =0; /* Signal to enable updating Program Counter */
+            mult_operation_reg = 0 ;
+            mflo_flag_reg = 0;
         end 
         NOTBRANCH_EQUAL_COMPARE:
         begin 
@@ -638,6 +685,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             //Branch_reg      =1; /* Prepare signal for branch (and operation) */
             Branch_reg      <=!Zero; /* Prepare signal for branch (and operation) */
             PCWrite_reg     =0; /* Signal to enable updating Program Counter */
+            mult_operation_reg = 0 ;
+            mflo_flag_reg = 0;
         end 
         default:
         begin 
@@ -658,6 +707,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCSrc_reg       =0; /* Allows to select the PC source, 0=ALUResult, 1=ALUOut*/
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
+            mult_operation_reg = 0 ;
+            mflo_flag_reg = 0;
         end
     endcase
 end 

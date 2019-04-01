@@ -17,7 +17,7 @@ module MIPS_jump_TB;
     reg [3:0]state;
     wire flag;
     wire[2:0] counter;
-    wire [7:0] gpio_data_out;
+    wire [7:0] copyRD1;
     
 MIPS_new#(
     .DATA_WIDTH(DATA_WIDTH),/* length of data */
@@ -29,7 +29,7 @@ MIPS_new#(
 	/* Test signals */
     //.count_state(state)
     .count_state(counter),
-    .gpio_data_out(gpio_data_out)
+    .copyRD1(copyRD1)
 );
 
 CounterwFlag_P 

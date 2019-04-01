@@ -10,19 +10,23 @@ module decode_instruction
 	output flag_lw,
 	output flag_R_type,				//R type =1
 	output flag_I_type,				//I type =1
-	output flag_J_type,				//J type =1
-	output [1:0]mux4selector		//allows to select the operand for getting srcB number
+	output [1:0]flag_J_type,				//J type =1
+	output [1:0]mux4selector,		//allows to select the operand for getting srcB number
+	output mult_operation,			//indicates if the multiplication operation was selected
+	output mflo_flag				//indicates mflo is requested
 	)				//to control the source data for srcA
 ;
 
 reg [1:0]mux4selector_reg;
+reg mult_operation_reg;
+reg mflo_flag_reg;
 reg destination_reg_indicator; 		//1: R type (rd), 0: I type (rt)
 reg [3:0]ALUControl_reg;
 reg flag_sw_reg;
 reg flag_lw_reg;
 reg flag_R_type_reg;
 reg flag_I_type_reg;
-reg flag_J_type_reg;
+reg [1:0]flag_J_type_reg;
 
 assign ALUControl =ALUControl_reg;
 
@@ -33,7 +37,7 @@ always @(opcode_reg,funct_reg) begin
 		
 		flag_R_type_reg = 1;	//Indicate that a R type instruction was detected
 		flag_I_type_reg = 0;	//Not an I type instruction
-		flag_J_type_reg = 0;	//Not a J type instruction
+		//flag_J_type_reg = 0;	//Not a J type instruction
 		flag_lw_reg		=1'b0;
 		flag_sw_reg		=1'b0;
 
@@ -43,35 +47,75 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=1;	//destination will be rd
 				ALUControl_reg<=4'd8;			//operation Shift to left				
 				mux4selector_reg=2'd0;
+				mult_operation_reg =0;			//indicates no mult operation
+				mflo_flag_reg		<=0;			//mflo operation not selected;
+				flag_J_type_reg = 0;	//Not a J type instruction
 			end
-			6'h25: ///or
+			6'h8: //jump register (jr)
 			begin
 				destination_reg_indicator=1;	//destination will be rd
-				ALUControl_reg<=4'd6;			//operation OR				
+				ALUControl_reg<=4'd0;			//operation to be defined
 				mux4selector_reg=2'd0;
+				mult_operation_reg =0;			//indicates no mult operation
+				mflo_flag_reg		<=0;			//mflo operation not selected;
+				flag_J_type_reg = 2;			// jr type instruction,send 2 to mux 4_1
+			end
+			6'h12: //mflo
+			begin
+				destination_reg_indicator=1;	//destination will be rd
+				ALUControl_reg		<=4'd0;			//operation multiplication
+				mux4selector_reg	<=2'd0;
+				mult_operation_reg 	<=0;			//indicates no mult operation
+				mflo_flag_reg		<=1;			//mflo operation selected;
+				flag_J_type_reg = 0;	//Not a J type instruction
+			end
+			6'h18: //mult
+			begin
+				destination_reg_indicator=1;	//destination will be rd
+				ALUControl_reg<=4'd0;			//operation multiplication
+				mux4selector_reg=2'd0;
+				mult_operation_reg =1;			//indicates mult operation
+				mflo_flag_reg		<=0;			//mflo operation not selected;
+				flag_J_type_reg = 0;	//Not a J type instruction
 			end
 			6'h20: //add
 			begin
 				destination_reg_indicator=1;	//destination will be rd
 				ALUControl_reg<=4'd2;			//operation OR				
 				mux4selector_reg=2'd0;
+				mult_operation_reg =0;			//indicates no mult operation
+				mflo_flag_reg		<=0;			//mflo operation not selected;
+				flag_J_type_reg = 0;	//Not a J type instruction
 			end
+			6'h25: ///or
+			begin
+				destination_reg_indicator=1;	//destination will be rd
+				ALUControl_reg<=4'd6;			//operation OR				
+				mux4selector_reg=2'd0;
+				mult_operation_reg =0;			//indicates no mult operation
+				mflo_flag_reg		<=0;			//mflo operation not selected;
+				flag_J_type_reg = 0;	//Not a J type instruction
+			end
+			
 			default:
 			begin
 				destination_reg_indicator=1;	//destination will be rd
 				ALUControl_reg<=4'd2;			//operation add 				
 				mux4selector_reg=2'd0;
+				mult_operation_reg =0;			//indicates no mult operation
+				mflo_flag_reg		<=0;			//mflo operation not selected;
+				flag_J_type_reg = 0;	//Not a J type instruction
 			end
 		endcase
 
 	end else begin  //It is an I or J type instruction, destination_reg_indicator=0
 		
 		flag_R_type_reg = 0;	//Not a R type instruction 
-		//flag_I_type_reg = 1;	//Indicate it is I type instruction
-		//flag_J_type_reg = 0;	//Not a J type instruction
+		mult_operation_reg =0;
+		mflo_flag_reg		=0;			//mflo operation not selected;
 
 		case(opcode_reg)
-			6'b000010: //Jump - 0x02
+			6'b000010: //Jump(j) - 0x02
 			begin
 			  	flag_I_type_reg = 0;	//Not an I type instruction
 				flag_J_type_reg = 1;	//J type instruction
@@ -81,7 +125,7 @@ always @(opcode_reg,funct_reg) begin
 				ALUControl_reg<=4'd0;			//not relevant
 				mux4selector_reg=2'd0;			//not relevant
 			end
-			6'b000011: //Jump and link- 0x03
+			6'b000011: //Jump and link(jal)- 0x03
 			begin
 				flag_I_type_reg = 0;	//Not an I type instruction
 				flag_J_type_reg = 1;	//J type instruction
@@ -124,6 +168,17 @@ always @(opcode_reg,funct_reg) begin
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
 			end			
+			6'b001010:	//slti - 0x0A
+			begin
+			  	destination_reg_indicator=0;	//destination will be rt
+				ALUControl_reg<=4'd12;			//operation slti
+				/*@TODO: The operation subtract could be used, and the flag negative could be used to compare the values */
+				mux4selector_reg=2'd2;			//select immediate value
+				flag_lw_reg=1'b0;
+				flag_sw_reg=1'b0;
+				flag_I_type_reg = 1;	//Indicate it is I type instruction
+				flag_J_type_reg = 0;	//Not a J type instruction
+			end
 			6'b001100: //andi - 0x0C
 			begin
 				destination_reg_indicator=0;	//destination will be rt
@@ -200,5 +255,7 @@ assign mux4selector= mux4selector_reg;
 assign flag_R_type = flag_R_type_reg;
 assign flag_I_type = flag_I_type_reg;
 assign flag_J_type = flag_J_type_reg;
+assign mult_operation = mult_operation_reg;
+assign mflo_flag = mflo_flag_reg;
 
 endmodule

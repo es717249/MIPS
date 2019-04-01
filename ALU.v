@@ -150,11 +150,17 @@ always@(*)begin
 			result_reg	<=  dataB<< 16;		
 			negative_reg <=0;
 		end 
-//		4'b1100:
-//		begin
-//			result_reg	 <=	1'd0;
-//			negative_reg <=0;	
-//		end
+		4'b1100:	//slti
+		begin
+			if(dataA < dataB)
+			begin
+				result_reg	 <=	1'd1;
+				negative_reg <=1'd1;
+			end else begin
+				result_reg	 <=	1'd0;
+				negative_reg <=1'b0;
+			end
+		end
 //		4'b1101:
 //		begin
 //			result_reg	 <=	1'd0;

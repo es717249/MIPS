@@ -10,8 +10,8 @@ module MemoryUnit
 #
 (
 	parameter DATA_WIDTH=32, 		//data length
-	parameter ADDR_WIDTH=8			//bits to address the elements
-	//parameter ADDR_WIDTH=6			//bits to address the elements
+	//parameter ADDR_WIDTH=8			//bits to address the elements
+	parameter ADDR_WIDTH=6			//bits to address the elements
 )
 (
 	//inputs
@@ -43,10 +43,15 @@ module MemoryUnit
 
 	initial   //no es sintetizable pero le ayuda al sintetizador para inferir una memoria rom y para inicializarla
 	begin		
-		$readmemh("Test_MIPS_1inst.hex", rom);	//Test1: instructions R,I,SW,LW,BEQ,BNE
-		//$readmemh("Test_MIPS_jump.hex", rom);	//Test2: instructions jump
+		//$readmemh("Test_MIPS_1inst.hex", rom);	//Test1: instructions R,I,SW,LW,BEQ,BNE
+		//$readmemh("Test_MIPS_jump.hex", rom);		//Test2: instructions jump
 		//$readmemh("Test_MIPS_SW_LW.hex", rom);	//Test3: instructions sw, lw
-		//$readmemh("testmem.hex", rom);	//Test3: memory
+		//$readmemh("testmem.hex", rom);	//Test4: memory
+		//$readmemh("Test_S0.hex", rom);	//Test5: few instructions
+		//$readmemh("Test_slti.hex", rom);	//Test6: slti instruction
+		//$readmemh("Test_mult.hex", rom);	//Test7: mult instruction
+		$readmemh("Test_jr.hex", rom);	//Test8: jr instruction
+
 	end
 
 	always @ (posedge clk)
