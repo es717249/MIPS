@@ -12,11 +12,16 @@ wire [ADDR_WIDTH-1:0]  add_tmp;
 
 assign aligment_error = (address & 3)==0 ? 1'd0 : 1'd1 ;
 
-//assign add_tmp = address & 32'hEFFF7FFF;
+
+
 assign add_tmp = address - 32'h10010000;
+//assign add_tmp = address - 32'h10004000;
 assign translated_addr = (add_tmp >> 2) ;
+//assign translated_addr = add_tmp ;
+
 
 assign MIPS_address = add_tmp + 32'h10010000;
+//assign MIPS_address = add_tmp + 32'h10004000;
 
 
 

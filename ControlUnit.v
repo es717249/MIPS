@@ -453,7 +453,9 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0;//mult_operation_wire ;
-            mflo_flag_reg = 0;
+            //mflo_flag_reg = 0;
+            mflo_flag_reg = mflo_flag_wire; /* on mflo inst, enable passing data to Aluout reg */
+            
         end
         EXEC_JUMP:
         begin
@@ -528,7 +530,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = mult_operation_wire ;
-            mflo_flag_reg = mflo_flag_wire;
+            mflo_flag_reg <= mflo_flag_wire;
         end
         GET_EFFECTIVE_ADDR:     /* For sw operation */
         begin

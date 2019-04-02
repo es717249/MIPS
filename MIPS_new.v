@@ -263,14 +263,14 @@ MUX_for_PC
 
 //####################   Memory Unit     ########################
 MemoryUnit #(
-    .DATA_WIDTH(DATA_WIDTH), 
-    //.ADDR_WIDTH(ADDR_WIDTH)//bits to address the elements
-    .ADDR_WIDTH(6)//bits to address the elements
+    .DATA_WIDTH(DATA_WIDTH),     
+    .ADDR_WIDTH(8)//bits to address the elements
 )MemoryMIPS
 (
     /* inputs */
-    //.addr(translated_addr_wire),	//Address to read from ROM
-    .addr(mux_address_Data_out[5:0]),	//Address to read from ROM
+    
+    //.addr(mux_address_Data_out[5:0]),	//Address to read from ROM
+    .addr(mux_address_Data_out[7:0]),	//Address to read from ROM
     //.wdata(B),			            //data to write to RAM
     .wdata(WD_input),			            //data to write to RAM
     .we(MemWrite_wire),				//@Control signal: enable

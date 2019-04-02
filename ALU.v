@@ -150,7 +150,7 @@ always@(*)begin
 			result_reg	<=  dataB<< 16;		
 			negative_reg <=0;
 		end 
-		4'b1100:	//slti
+		4'b1100:	//slt
 		begin
 			if(dataA < dataB)
 			begin
