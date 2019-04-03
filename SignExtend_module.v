@@ -6,6 +6,6 @@ module SignExtend_module
 	localparam nbit=5'd16;
 
 
-	assign extended_sign_out = (immediate[15]==1'b0)?{{nbit{1'b0}},immediate}:{{nbit{1'b1}},immediate} ;
+	assign extended_sign_out = (immediate[15]==1'b0)? {{nbit{1'b0}},immediate}: {{nbit{1'b1}},immediate} ;
 
 endmodule

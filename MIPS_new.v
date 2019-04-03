@@ -1,6 +1,7 @@
 //Using 5cgxfc5c6f27c7
 /**
     This is a new implementation of the MIPS
+    working ok up to time 6370 ps. LW instruction needs to be corrected
  */
 
 module MIPS_new
@@ -97,8 +98,10 @@ Signals to update Program Counter
 wire PCSrc_wire;					/* Signal for a mux to select the source of PC */
 wire [DATA_WIDTH-1:0]PC_current/*synthesis keep*/;					/* Current Program counter */
 wire [DATA_WIDTH-1:0] PC_source/*synthesis keep*/;	/* signal from mux to PC register */
+wire [DATA_WIDTH-1:0] start_PC;     /* Signal to initialize the PC to x400000 */
 wire [DATA_WIDTH-1:0] PC_source_tmp;	/* signal from mux to PC register */
 wire PC_En_wire;
+wire startPC_wire;
 wire [DATA_WIDTH-1:0] mux_address_Data_out/*synthesis keep*/;
 wire [DATA_WIDTH-1 : 0]ALUOut_Translated/*synthesis keep*/;		//Registerd output of ALU
 /***************************************************************
@@ -219,7 +222,8 @@ ControlUnit CtrlUnit(
     .flag_J_type_out(flag_Jtype_wire),
     .flag_sw_out(sw_inst_detector),
     .mult_operation_out(demux_aluout_sel),		//this controls if the result is saved in Lo-Hi reg(1) or Reg file (0)
-    .mflo_flag_out(mflo_flag)
+    .mflo_flag_out(mflo_flag),
+    .selectPC_out(startPC_wire)
 );
 
 //####################     Address preparation   #######################
@@ -250,7 +254,7 @@ Register#(
 );
 //###############   FF, from PC to Memory Unit     ##################
 mux2to1#(.Nbit(DATA_WIDTH))
-MUX_for_PC
+MUX_from_PC_to_Mem_Unit
 (
     .mux_sel(IorD_wire),				//@Control signal: Instruction or Data selection. 1=from ALU
     //.data1(PC_current), 				//0=Comes from 'PC_Reg'
@@ -549,6 +553,22 @@ mux4to1#(
     .data2(New_JumpAddress), 		//New jump address 32 bit long
     .data3(A),						//for JR instruction
     .data4(0),
-    .Data_out(PC_source) 			//Input for ProgramCounter_Reg
+    //.Data_out(PC_source) 			//Input for ProgramCounter_Reg
+    .Data_out(start_PC) 			//Input for ProgramCounter_Reg
 );
+
+
+
+
+mux2to1#(
+    .Nbit(DATA_WIDTH)
+)MUX_Boot_startAddr
+(
+    .mux_sel(startPC_wire),				//@Control signal: Instruction or Data selection. 1=from ALU    
+    .data1(32'h400000), 				//0=Comes from bootloader    
+    .data2(start_PC), 					//1=comes from mux to update PC w jump 
+    .Data_out(PC_source) 	
+);
+
+
 endmodule

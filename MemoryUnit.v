@@ -45,7 +45,7 @@ module MemoryUnit
 	begin		
 		//$readmemh("Test_MIPS_1inst.hex", rom);	//Test1: instructions R,I,SW,LW,BEQ,BNE
 		//$readmemh("Test_MIPS_jump.hex", rom);		//Test2: instructions jump
-		//$readmemh("Test_MIPS_SW_LW.hex", rom);	//Test3: instructions sw, lw
+		$readmemh("Test_MIPS_SW_LW.hex", rom);	//Test3: instructions sw, lw
 		//$readmemh("testmem.hex", rom);	//Test4: memory
 		//$readmemh("Test_S0.hex", rom);	//Test5: few instructions
 		//$readmemh("Test_slti.hex", rom);	//Test6: slti instruction
@@ -53,7 +53,7 @@ module MemoryUnit
 		//$readmemh("Test_jr.hex", rom);	//Test8: jr instruction
 		//$readmemh("Test_jal.hex", rom);	//Test9: jal instruction
 		//$readmemh("Factorial.hex", rom);	//Test9: Factorial program		
-		$readmemh("Recursive_Add.hex", rom);	//Test9: Recursive addition program
+		//$readmemh("Recursive_Add.hex", rom);	//Test10: Recursive addition program
 
 	end
 

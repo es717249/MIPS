@@ -49,7 +49,8 @@ module ControlUnit
     output [1:0]flag_J_type_out,
     output flag_sw_out,
     output mult_operation_out,
-    output mflo_flag_out);
+    output mflo_flag_out,
+    output selectPC_out);
 
 //###################### Variables ########################
 
@@ -85,7 +86,7 @@ reg ALUresult_en_reg;
 reg PC_En_reg;
 reg mult_operation_reg;
 reg mflo_flag_reg;
-
+reg selectPC_reg;
 
 
 assign IorD = IorD_reg;
@@ -108,6 +109,7 @@ assign flag_J_type_out = flag_J_type_wire;
 assign flag_sw_out = flag_sw_wire;
 assign mult_operation_out = mult_operation_reg;
 assign mflo_flag_out = mflo_flag_reg;
+assign selectPC_out = selectPC_reg;
 //####################     Assignations   #######################
 //assign AND1_wire = Branch & Zero;
 //assign PC_En  = AND1_wire | PCWrite | PC_En_reg;    /* Signal for Program counter enable register */
@@ -354,6 +356,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
         IDLE:
         begin
             //PC_En_reg       =0; /* Control signal for the PC flip flop */
+            selectPC_reg    =0;
             IorD_reg        =0; /* Selects the address: 0= program counter(fetch), 1=load operation*/
             MemWrite_reg    =0; /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
@@ -369,7 +372,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             ALUresult_en_reg<=0; /* Allows writing to ALU register*/
             PCSrc_reg       =0; /* Allows to select the PC source, 0=ALUResult, 1=ALUOut*/
             Branch_reg      =0; /* not relevant */
-            PCWrite_reg     =0; /* not relevant */
+            PCWrite_reg     =1; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
         end
@@ -378,6 +381,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             /* Read ROM mem and store it in instruction Flip flop */
             /* Aumenta PC, 4*/
             //PC_En_reg       =1;     /* Control signal for the PC flip flop */
+            selectPC_reg    =1;
             IorD_reg        =0;     /* Selects the address: 0= program counter(fetch), 1=load operation*/
             MemWrite_reg    =0;     /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
             Mem_select_reg  =0;     /* Memory selection: 0=ROM, 1=RAM*/
@@ -406,6 +410,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
                 Define qué tipo de instrucción es.
                 Prepara la operación de la ALU */
             //PC_En_reg       =0;     /* Control signal for the PC flip flop */
+            selectPC_reg    =1;
             IorD_reg        =0;     /* not relevant*/
             MemWrite_reg    =0;     /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
             Mem_select_reg  =0;     /* Memory selection: 0=ROM,  1=RAM*/
@@ -436,6 +441,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
                 Se guarda el resultado en Flip flop ALUout
             */
             //PC_En_reg       =0; /* not relevant */
+            selectPC_reg    =1;
             IorD_reg        =0; /* not relevant */
             MemWrite_reg    =0; /* not relevant */
             Mem_select_reg  =0; /* not relevant */
@@ -459,6 +465,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
         end
         EXEC_JUMP:
         begin
+        selectPC_reg    =1;
             IorD_reg        =0; /* not relevant */
             MemWrite_reg    =0; /* not relevant */
             Mem_select_reg  =0; /* not relevant */
@@ -487,6 +494,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             /* wait until the PC is updated. This is like doing FETCH */
 
             /* Aumenta PC, 4*/
+            selectPC_reg    =1;
             IorD_reg        =0;     /* Selects the address: 0= program counter(fetch), 1=load operation*/
             MemWrite_reg    =0;     /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
             Mem_select_reg  =0;     /* Memory selection: 0=ROM, 1=RAM*/
@@ -513,6 +521,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             /*  El resultado de la ALU se escribe al registro destino en Register File
               */
             //PC_En_reg       =0; /* not relevant */
+            selectPC_reg    =1;
             IorD_reg        =0; /* not relevant */
             MemWrite_reg    =0; /* not relevant */
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
@@ -540,6 +549,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
                 immediate: tiene el offset que hay que sumar a rt */
             
             //PC_En_reg       =0; /* not relevant */
+            selectPC_reg    =1;
             IorD_reg        =0; /* not relevant */
             MemWrite_reg    =0; /* not relevant */
             Mem_select_reg  =0; /* not relevant */
@@ -563,6 +573,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
         STORE:
         begin
             //PC_En_reg       =0; /* not relevant */
+            selectPC_reg    =1;
             IorD_reg        =1; /* Selects the address: 1=store operation*/
             MemWrite_reg    =1; /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
             Mem_select_reg  =1; /* Memory selection: 0=ROM, 1=RAM*/
@@ -584,6 +595,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
         end
         DUMMY:
         begin
+        selectPC_reg    =1;
             IorD_reg        =1; /* Selects the address: 1=store operation*/
             MemWrite_reg    =0; /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
@@ -606,6 +618,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
         LOAD:
         begin
             //PC_En_reg       =0; /* not relevant */
+            selectPC_reg    =1;
             IorD_reg        =1; /* Selects the address: 1=load operation */
             MemWrite_reg    =0; /* not relevant */
             Mem_select_reg  =1; /* Memory selection: 0=ROM, 1=RAM*/
@@ -629,6 +642,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
         BRANCH_EQUAL_GET_ADDR:
         begin
             //PC_En_reg       =0; /* not relevant */
+            selectPC_reg    =1;
             IorD_reg        =0; /* Selects the address: 0= program counter(fetch), 1=load operation*/
             MemWrite_reg    =0; /* not relevant */
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
@@ -652,6 +666,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
         BRANCH_EQUAL_COMPARE:
         begin 
             //PC_En_reg       =0; /* Control signal for the PC flip flop */
+            selectPC_reg    =1;
             IorD_reg        =0; /* Selects the address: 0= program counter(fetch)*/
             MemWrite_reg    =0; /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
@@ -675,6 +690,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
         NOTBRANCH_EQUAL_COMPARE:
         begin 
             //PC_En_reg       =0; /* Control signal for the PC flip flop */
+            selectPC_reg    =1;
             IorD_reg        =0; /* Selects the address: 0= program counter(fetch)*/
             MemWrite_reg    =0; /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
@@ -698,6 +714,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
         default:
         begin 
             //PC_En_reg       =0; /* Control signal for the PC flip flop */
+            selectPC_reg    =1;
             IorD_reg        =0; /* Selects the address: 0= program counter(fetch), 1=load operation*/
             MemWrite_reg    =0; /* Write enable for the memory (on RAM), 1=enable, 0= disabled*/
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
