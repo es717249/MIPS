@@ -1,6 +1,8 @@
 .text
 main:
-	li $a0,3 # Loading constant
+	lui	$sp,0x1001
+	ori	$sp,$sp,0x0100
+	addi $a0,$a0,7 # Loading constant
 	jal Factorial # Calling procedure
 	j Exit	# Jump to Main label
 	
@@ -18,6 +20,11 @@ Loop:
 	lw $a0, 0($sp) # Loading values from stak
 	lw $ra, 4($sp) # Loading values from stak
 	addi $sp, $sp, 8 # Increasing stack pointer
-	mul $v0, $a0, $v0 # Multiplying n*Factorial(n-1)
+	mult $a0, $v0 # Multiplying n*Factorial(n-1)
+	mflo $v0
 	jr $ra  # Return to the caller
 Exit:
+	addi $v0,$v0,0
+	lui $s0,0x1001
+	ori $s0,$s0,0x0024
+	sw  $v0,0($s0)

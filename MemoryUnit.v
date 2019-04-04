@@ -43,17 +43,19 @@ module MemoryUnit
 
 	initial   //no es sintetizable pero le ayuda al sintetizador para inferir una memoria rom y para inicializarla
 	begin		
-		//$readmemh("Test_MIPS_1inst.hex", rom);	//Test1: instructions R,I,SW,LW,BEQ,BNE
+		//$readmemh("Test_MIPS_1inst.hex", rom);	//Test1 -Tarea1: instructions R,I,SW,LW,BEQ,BNE
 		//$readmemh("Test_MIPS_jump.hex", rom);		//Test2: instructions jump
-		$readmemh("Test_MIPS_SW_LW.hex", rom);	//Test3: instructions sw, lw
+		//$readmemh("Test_MIPS_SW_LW.hex", rom);	//Test3: instructions sw, lw
 		//$readmemh("testmem.hex", rom);	//Test4: memory
 		//$readmemh("Test_S0.hex", rom);	//Test5: few instructions
 		//$readmemh("Test_slti.hex", rom);	//Test6: slti instruction
 		//$readmemh("Test_mult.hex", rom);	//Test7: mult instruction
 		//$readmemh("Test_jr.hex", rom);	//Test8: jr instruction
 		//$readmemh("Test_jal.hex", rom);	//Test9: jal instruction
-		//$readmemh("Factorial.hex", rom);	//Test9: Factorial program		
+		$readmemh("Factorial.hex", rom);	//Test9: Factorial program, 5000ps for fact 3, so fact 15 :21ns
 		//$readmemh("Recursive_Add.hex", rom);	//Test10: Recursive addition program
+		//$readmemh("GPIO_test.hex", rom);	//Test11: 
+
 
 	end
 

@@ -351,7 +351,7 @@ always @(posedge clk or negedge reset) begin
     end 
 end
 
-always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_lw_wire,flag_sw_wire)begin 
+always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_lw_wire,flag_sw_wire,mflo_flag_wire,mult_operation_wire)begin 
     case(state)
         IDLE:
         begin
@@ -458,7 +458,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCSrc_reg       =0; /* not relevant */
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =0; /* not relevant */
-            mult_operation_reg = 0;//mult_operation_wire ;
+            mult_operation_reg = 0;
             //mflo_flag_reg = 0;
             mflo_flag_reg = mflo_flag_wire; /* on mflo inst, enable passing data to Aluout reg */
             
@@ -485,7 +485,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCSrc_reg       =0; /* not relevant */
             Branch_reg      =0; /* not relevant */
             PCWrite_reg     =1; /* Save the updated jump address in PC */
-            //mult_operation_reg = mult_operation_wire;
+            
             mult_operation_reg = 0;
             mflo_flag_reg = 0;
         end

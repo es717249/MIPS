@@ -102,6 +102,8 @@ always @(opcode_reg,funct_reg) begin
 				ALUControl_reg<=4'd12;			//operation slt
 				/*@TODO: The operation subtract could be used, and the flag negative could be used to compare the values */
 				mux4selector_reg=2'd0;			//select immediate value
+				mult_operation_reg =0;			//indicates no mult operation
+				mflo_flag_reg		<=0;			//mflo operation not selected;
 				flag_J_type_reg = 0;	//Not a J type instruction
 			end
 			

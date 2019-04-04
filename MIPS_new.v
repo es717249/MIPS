@@ -13,8 +13,8 @@ module MIPS_new
     input clk, 					/* clk signal */
     input reset, 				/* async signal to reset */	
     input [2:0]count_state, 		/* 7 states */
-    //output [7:0] gpio_data_out,
-    output [7 : 0] copyRD1
+    output [7:0] gpio_data_out
+    //output [7 : 0] copyRD1
 );
 
 /***************************************************************
@@ -117,7 +117,7 @@ wire [DATA_WIDTH-1:0] MIPS_RAM_address/*synthesis keep*/;
 Signals for GPIO
 ***************************************************************/
 wire gpio_enable/*synthesis keep*/;
-wire [7:0] gpio_data_out;
+/* wire [7:0] gpio_data_out; */
 wire sw_inst_detector;
 wire demuxSelector_wire;
 wire [DATA_WIDTH-1:0]Gpio_data_input;
@@ -138,7 +138,8 @@ Signals for MUX ALU result / Lo Reg
 ***************************************************************/
 wire mflo_flag;
 
-assign copyRD1 = RD1[7:0];
+/* assign copyRD1 = RD1[7:0]; */
+//assign copyRD1 = gpio_data_out;
 
 //####################     GPIO controller unit   #######################
 GPIO_controller #(
@@ -146,8 +147,6 @@ GPIO_controller #(
     .ADDR_WIDTH(32)
 )GPIO
 (
-    //.addr_rom(PC_current),
-    //.addr_ram(ALUOut),
     .addr_ram(demux_aluout_0),	
     .wdata( Gpio_data_input[7:0]),
     .clk(clk),
@@ -185,7 +184,6 @@ VirtualAddress_RAM #(
     .ADDR_WIDTH(DATA_WIDTH)
 )VirtualRAM_Mem
 (
-    //.address(ALUOut),
     .address(demux_aluout_0),	
     .translated_addr(ALUOut_Translated),
     .MIPS_address(MIPS_RAM_address),
@@ -258,8 +256,7 @@ MUX_from_PC_to_Mem_Unit
 (
     .mux_sel(IorD_wire),				//@Control signal: Instruction or Data selection. 1=from ALU
     //.data1(PC_current), 				//0=Comes from 'PC_Reg'
-    .data1(translated_addr_wire), 				//0=Comes from 'PC_Reg'	
-    //.data2(ALUOut), 					//1=From ALUOut signal 	
+    .data1(translated_addr_wire), 				//0=Comes from 'PC_Reg'	    
     .data2(ALUOut_Translated), 					//1=From ALUOut signal 
     .Data_out(mux_address_Data_out) 	//this have the Address for Memory input
 );
@@ -348,23 +345,12 @@ Register_File #(
 );
 
 //##############  Mux from Memory to Register File ############
-//mux2to1 #(
-//    .Nbit(DATA_WIDTH)
-//)MUX_to_WriteData_RegFile
-//(
-//    .mux_sel(MemtoReg_wire),			//@Control signal:  0=ALU , 1=Memory
-//    //.data1(ALUOut),		 			//From ALU result
-//    .data1(demux_aluout_0),		 			//From ALU result	
-//    .data2(DataMemory),				//From Memory: Read data
-//    .Data_out(datatoWD3) 				//This have the Address for Memory input
-//);
 
 mux4to1 #(
     .Nbit(DATA_WIDTH)
 )MUX_to_WriteData_RegFile
 (
-    .mux_sel(MemtoReg_wire),			//@Control signal:  0=ALU , 1=Memory
-    //.data1(ALUOut),		 			//From ALU result
+    .mux_sel(MemtoReg_wire),			//@Control signal:  0=ALU , 1=Memory    
     .data1(demux_aluout_0),		 			//From ALU result	
     .data2(DataMemory),				//From Memory: Read data
     .data3(PC_current),             //for JAL instruction, write to Reg 31 ($ra)
@@ -535,15 +521,6 @@ Shift_Concatenate shiftConcat_mod
 
 //####################   MUX to update PC considering Jump instruction  ########################
 
-//mux2to1#(
-//	.Nbit(DATA_WIDTH)
-//)MUX_to_updatePC_withJump
-//(
-//	.mux_sel(flag_Jtype_wire),		//@Control signal: mux selector, 0=normal PC,1 =jump address
-//	.data1(PC_source_tmp), 			//comes from MUX_for_PC_source
-//	.data2(New_JumpAddress), 		//New jump address 32 bit long
-//	.Data_out(PC_source) 			//Input for ProgramCounter_Reg
-//);
 mux4to1#(
     .Nbit(DATA_WIDTH)
 )MUX_to_updatePC_withJump

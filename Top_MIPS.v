@@ -32,11 +32,12 @@ MIPS_new#(
 )testing_unit
 (
 	.clk(clk_sys), 				        /* clk signal */
+	//.clk(flag_clk1), 				        /* clk signal */
 	.reset(reset), 			        /* async signal to reset */
 	/* Test signals */    
     .count_state(counter),
-    //.gpio_data_out(leds),
-    .copyRD1(leds)
+    .gpio_data_out(leds),
+    //.copyRD1(leds)
 );
 
 CounterwFlag_P #(
@@ -45,8 +46,9 @@ CounterwFlag_P #(
 )machine_cycle_cnt
 (
 	// Input Ports
-	//.clk(flag_clk1),
-    .clk(pll_clk),
+	/* .clk(flag_clk1), */
+    /* .clk(pll_clk), */
+    .clk(clk_sys),
 	.reset(reset),
     .enable(enable),
 	.flag(flag),
