@@ -13,7 +13,8 @@ module decode_instruction
 	output [1:0]flag_J_type,				//J type =1
 	output [1:0]mux4selector,		//allows to select the operand for getting srcB number
 	output mult_operation,			//indicates if the multiplication operation was selected
-	output mflo_flag				//indicates mflo is requested
+	output mflo_flag,				//indicates mflo is requested
+	output immediate_src			//mux selector for immediate data
 	)				//to control the source data for srcA
 ;
 
@@ -27,6 +28,7 @@ reg [1:0] flag_lw_reg;
 reg flag_R_type_reg;
 reg flag_I_type_reg;
 reg [1:0]flag_J_type_reg;
+reg immediate_src_reg;
 
 assign ALUControl =ALUControl_reg;
 
@@ -40,7 +42,8 @@ always @(opcode_reg,funct_reg) begin
 		//flag_J_type_reg = 0;	//Not a J type instruction
 		flag_lw_reg		=2'd0;
 		flag_sw_reg		=1'b0;
-
+		immediate_src_reg = 0;	//select immediate data from instruction immediate field
+		
 		case(funct_reg)
 			6'h0:  //sll
 			begin
@@ -134,6 +137,7 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=0;	//not relevant
 				ALUControl_reg<=4'd0;			//not relevant
 				mux4selector_reg=2'd0;			//not relevant
+				immediate_src_reg = 0;	//select immediate data from instruction immediate field
 			end
 			6'b000011: //Jump and link(jal)- 0x03
 			begin
@@ -144,6 +148,7 @@ always @(opcode_reg,funct_reg) begin
 				destination_reg_indicator=2;	//Use the 3rd source: 5'd31 for $ra register
 				ALUControl_reg<=4'd0;			//not relevant
 				mux4selector_reg=2'd0;			//not relevant
+				immediate_src_reg = 0;	//select immediate data from instruction immediate field
 			end
 
 			6'b000100: //beq - 0x04
@@ -155,6 +160,7 @@ always @(opcode_reg,funct_reg) begin
 				mux4selector_reg=2'd0;	
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
+				immediate_src_reg = 0;	//select immediate data from instruction immediate field
 			end 
 			6'b000101: //bne - 0x05
 			begin 
@@ -166,17 +172,32 @@ always @(opcode_reg,funct_reg) begin
 				mux4selector_reg=2'd0;	
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
+				immediate_src_reg = 0;	//select immediate data from instruction immediate field
 			end 
+			6'b000110: //uart_copy  - 0x06
+			begin 
+				/* Edit these values */
+				destination_reg_indicator=0;	//destination will be rt
+				ALUControl_reg<=4'd2;			//operation add 				
+				flag_lw_reg=2'd0;
+				flag_sw_reg=1'b0;		
+				mux4selector_reg=2'd2;		//ALU SrcB select : immediate
+				flag_I_type_reg = 1;	//Indicate it is I type instruction
+				flag_J_type_reg = 0;	//Not a J type instruction
+				immediate_src_reg = 1;	//select data from UART_RX buffer
+			end 
+
 			6'b001000: //addi - 0x08
 			//Tengo que guardar estos datos en el register file
 			begin
 				destination_reg_indicator=0;	//destination will be rt
 				ALUControl_reg<=4'd2;			//operation add 				
-				mux4selector_reg=2'd2;
+				mux4selector_reg=2'd2;			//ALU SrcB select : immediate
 				flag_lw_reg=2'd0;
 				flag_sw_reg=1'b0;
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
+				immediate_src_reg = 0;	//select immediate data from instruction immediate field
 			end			
 			6'b001010:	//slti - 0x0A
 			begin
@@ -188,6 +209,7 @@ always @(opcode_reg,funct_reg) begin
 				flag_sw_reg=1'b0;
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
+				immediate_src_reg = 0;	//select immediate data from instruction immediate field
 			end
 			6'b001100: //andi - 0x0C
 			begin
@@ -198,6 +220,7 @@ always @(opcode_reg,funct_reg) begin
 				flag_sw_reg=1'b0;
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
+				immediate_src_reg = 0;	//select immediate data from instruction immediate field
 			end
 			6'b001101: //ori - 0x0D
 			begin
@@ -208,6 +231,7 @@ always @(opcode_reg,funct_reg) begin
 				flag_sw_reg=1'b0;
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
+				immediate_src_reg = 0;	//select immediate data from instruction immediate field
 			end
 			6'b001111:	//lui - 0x0F
 			begin
@@ -219,6 +243,7 @@ always @(opcode_reg,funct_reg) begin
 				mux4selector_reg=2'd2;	
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
+				immediate_src_reg = 0;	//select immediate data from instruction immediate field
 			end
 			6'b100011: /* lw	- 0x23 */
 			begin
@@ -229,6 +254,7 @@ always @(opcode_reg,funct_reg) begin
 				mux4selector_reg=2'd0;		
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
+				immediate_src_reg = 0;	//select immediate data from instruction immediate field
 			end
 			6'b101011: //sw - 0x2B
 			begin
@@ -240,6 +266,7 @@ always @(opcode_reg,funct_reg) begin
 				mux4selector_reg=2'd0;	
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 0;	//Not a J type instruction
+				immediate_src_reg = 0;	//select immediate data from instruction immediate field
 			end
 			
 
@@ -252,6 +279,7 @@ always @(opcode_reg,funct_reg) begin
 				mux4selector_reg=2'd0;
 				flag_I_type_reg = 1;	//Indicate it is I type instruction
 				flag_J_type_reg = 1;	//Not a J type instruction
+				immediate_src_reg = 0;	//select immediate data from instruction immediate field
 			end
 		endcase 
 	end 
@@ -267,5 +295,6 @@ assign flag_I_type = flag_I_type_reg;
 assign flag_J_type = flag_J_type_reg;
 assign mult_operation = mult_operation_reg;
 assign mflo_flag = mflo_flag_reg;
+assign immediate_src = immediate_src_reg;
 
 endmodule

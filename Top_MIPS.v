@@ -7,10 +7,13 @@ module Top_MIPS #(
     input clk_sys, 					/* MIPS clk signal - 50MHz*/
 	input reset, 				/* async signal to reset */	
     input enable,                /* enable signal */	
+    input SerialDataIn, //it's the input data port 
     /* outputs */
     output [7:0]leds,            /* output leds */    
-    output [2:0]state_out,
-    output happylight           /* alive clk signal */
+    //output [2:0]state_out,
+    output [7:0] uartdata,
+    output happylight,           /* alive clk signal */
+    output Rx_flag  //indicates the data was completely received 
 );
 
 wire [2:0] counter /*synthesis keep*/; 		/* 7 states */
@@ -21,7 +24,7 @@ wire flag_clk2/*synthesis keep*/;
 
 wire pll_clk;
 wire pll_locked;
-
+wire state_out;
 assign state_out = counter;
 assign happylight = flag_clk1;
 //assign happylight = flag_clk2;
@@ -36,7 +39,10 @@ MIPS_new#(
 	.reset(reset), 			        /* async signal to reset */
 	/* Test signals */    
     .count_state(counter),
-    .gpio_data_out(leds),
+    .SerialDataIn(SerialDataIn),
+    .Rx_flag(Rx_flag),
+    .DataRx(uartdata),
+    .gpio_data_out(leds)
     //.copyRD1(leds)
 );
 

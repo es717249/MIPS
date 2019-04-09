@@ -10,6 +10,11 @@ module MIPS_new_TB;
     localparam DATA_WIDTH = 32;
     localparam ADDR_WIDTH = 8;
     localparam MAXIMUM_VALUE = 4'd6;
+    localparam Nbit =8;
+
+    localparam clk_freq =50;
+    localparam baudrate= 5;
+
 	reg clk=0; 				        /* clk signal */
 	reg reset=0; 			        /* async signal to reset */
     reg enable=0;                   /* enable signal for start of operation */
@@ -17,23 +22,47 @@ module MIPS_new_TB;
     reg [3:0]state;
     wire flag;
     wire[2:0] counter;
-    wire [7:0] copyRD1;
+    //wire [7:0] copyRD1;
+    wire [7:0]leds;            /* output leds */    
+    //UART 
     
+    reg SerialDataIn; //it's the input data port 
+    reg clr_rx_flag; //to clear the Rx signal
+    wire [Nbit-1:0] DataRx; //Port where Rx information is available
+    wire Rx_flag; //indicates a data was received 
+
 MIPS_new
 #
 (
     .DATA_WIDTH(DATA_WIDTH),/* length of data */
-    .ADDR_WIDTH(ADDR_WIDTH)/* bits to address the elements */
+    .ADDR_WIDTH(ADDR_WIDTH),/* bits to address the elements */
+    .UART_Nbit(8),
+    .baudrate(baudrate),
+    .clk_freq(clk_freq)
 )testing_unit
 (
 	.clk(clk), 				        /* clk signal */
-	.reset(reset), 			        /* async signal to reset */
-	/* Test signals */
-    //.count_state(state)
+	.reset(reset), 			        /* async signal to reset */    
     .count_state(counter),
-    .copyRD1(copyRD1)
+    //.copyRD1(copyRD1)
+    //###### UART 
+    .SerialDataIn(SerialDataIn),
+    //.clr_rx_flag(clr_rx_flag),
+    .Rx_flag(Rx_flag),
+    .DataRx(DataRx),
+    .gpio_data_out(leds)
+    /* .copyRD1(leds) */
 );
-
+//(
+//	.clk(clk), 				        /* clk signal */
+//	.reset(reset), 			        /* async signal to reset */    
+//    .count_state(counter),
+//    //###### UART 
+//    .SerialDataIn(SerialDataIn),
+//    //.clr_rx_flag(clr_rx_flag),
+//    .Rx_flag(Rx_flag),
+//    .gpio_data_out(leds)  
+//);
 
 CounterwFlag_P 
 #(
@@ -49,17 +78,40 @@ CounterwFlag_P
     .counter(counter)
 );
 
+/* initial begin
+   #10 clk =!clk;
+end */
+
 initial begin
- 	forever #10 clk=!clk;
+ 	//forever #10 clk=!clk;
+    forever #(clk_freq/2) clk=!clk;
 end
 
 initial begin 
     /* Beginning of simulation */
     #0  reset=1'b0;
     #0  enable =1'b0;
-    #10 reset =1'b1;
+    SerialDataIn=1;
+	#(clk_freq/2) clr_rx_flag = 1;
+    #50 reset =1'b1;
     #0  enable =1'b1;
-    
+    #(clk_freq/2) clr_rx_flag = 0;
+
+    /* Send start bit */
+	#(500) SerialDataIn = 1'b0;
+	/* Send 8 data bits */
+	/* Send less significant bit first */
+	#(500) SerialDataIn = 1'b1;
+	#(500) SerialDataIn = 1'b0;
+   	#(500) SerialDataIn = 1'b0;
+	#(500) SerialDataIn = 1'b1;
+	#(500) SerialDataIn = 1'b1;
+	#(500) SerialDataIn = 1'b1;
+	#(500) SerialDataIn = 1'b0;
+	#(500) SerialDataIn = 1'b0;
+	/* Send stop bit */
+	#(500) SerialDataIn = 1'b1;
+    #(500)
     // ################### Testing add, addi, & sll instructions ################### //
 
     #0 state=0;    //IDLE

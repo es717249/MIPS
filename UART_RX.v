@@ -16,9 +16,9 @@
 *	//states for the control machine
 *	 IDLE = 0,
 *	 START= 1,
-*	 DELAY= 2,
-*	 SHIFT= 3,
-*	 STOP = 4
+*	 DELAY= 2,	Data adquisition
+*	 STOP = 3
+*	DEFAULT=4
 
 * Inputs:
 *
@@ -36,9 +36,8 @@
 *	1.0
 * Author: 
 *	Nestor Damian Garcia Hernandez
-*  Diego González Ávalos
 * Fecha: 
-*	23/11/2017
+*	01/04/2019
 *********************************************************************/
 
 module UART_RX
@@ -46,41 +45,52 @@ module UART_RX
 	parameter Nbit =8,
 	parameter baudrate= 9600,	
 	parameter clk_freq =50000000,
+	//parameter baudrate= 5,	
+	//parameter clk_freq =50,
 	parameter bit4count= CeilLog2(Nbit),		
-	parameter bit_time = clk_freq/baudrate,
-	parameter baud_cnt_bits = CeilLog2(bit_time),
-	parameter half_bit_time = (clk_freq/baudrate)/2,
-	//parameter half_bit_time = (bit_time)/2,
+	parameter bit_time = (clk_freq/baudrate)-1,/* Clocks per bit */
+	parameter baud_cnt_bits = CeilLog2(bit_time),	
+	parameter half_bit_time = (bit_time)/2,
 	
 	//states
 	parameter IDLE = 0,
 	parameter START= 1,
-	parameter DELAY= 2,
-	parameter SHIFT= 3,
-	parameter STOP = 4
+	parameter DELAY= 2,	
+	parameter STOP = 3,
+	parameter DEFAULT=4
+
 )
 (
 	//inputs
 	input SerialDataIn, //it's the input data port 
 	input clk, //clk signal
 	input reset, //async signal to reset 
-	input clr_rx_flag, //to clear the Rx signal
+	input clr_rx_flag, //to clear the Rx signal. 0=start new Reception, 1=stop, clear flag after reading the data
 	
 	//outputs
 	output [Nbit-1:0] DataRx, //Port where Rx information is available
-	output reg Rx_flag , //indicates a data was received 
-	output Parity_error //when 	 logic data contains parity errors. Just for pair parity
+	output reg Rx_flag  //indicates the data was completely received 
+	//output Parity_error //when 	 logic data contains parity errors. Just for pair parity
 );
 
-
+//reg half_bit_time_reg = half_bit_time;
 reg [bit4count:0]bit_number/*sythesis keep*/; //this will help to count N bits to receive, in this implementation 8 times (8 bits)
 reg [2:0] state/*sythesis keep*/;
 reg [Nbit-1:0]buff_rx/*sythesis keep*/;	//auxiliary buffer to keep data to receive
-reg [baud_cnt_bits-1:0] baud_count/*sythesis keep*/;
+reg [baud_cnt_bits-1:0] clock_count/*sythesis keep*/;
 
 assign DataRx = buff_rx;
 
-reg rx_parity;
+/* reg tmp_Rxdata2;
+reg tmp_Rxdata;
+
+always@(posedge clk)begin
+	tmp_Rxdata2 <= SerialDataIn;
+	tmp_Rxdata <= tmp_Rxdata;
+end
+ */
+
+//reg rx_parity;
 
 //Process for RX
 always @(posedge clk or negedge reset or posedge clr_rx_flag) begin
@@ -88,70 +98,79 @@ always @(posedge clk or negedge reset or posedge clr_rx_flag) begin
 	if (reset==1'b0) begin// reset		
 		state <= IDLE;
 		buff_rx <=0; //clear buffer
-		baud_count <=0; //restarts the count
+		clock_count <=0; //restarts the count
 		bit_number <=0; //restarts the count
 		Rx_flag <=0; //restarts the receiver flag
-		rx_parity <=0; //restarts the parity error flag
+		//rx_parity <=0; //restarts the parity error flag
 	end
 	else begin 
 		if(clr_rx_flag==1)
 			Rx_flag=0;  //Clear the flag due clr signal.
-		else
+		else begin 
 			case(state)
 				IDLE:		//wait for start bit
 					begin
 						bit_number <=0;
-						baud_count <=0;
+						clock_count <=0;						
+
 						if(SerialDataIn==1)
 							state <= IDLE;
 						else begin
-							rx_parity <=0;
+							/* Change state when start bit is 0 and Rx_flag=1 */
 							state <= START;		//Start the reception
-							end
+						end
+						
 					end
 				START:												//check for start bit
-					if(baud_count >= half_bit_time)begin
-						baud_count<=0;
-						state <= DELAY;
-						end
-					else begin	
-						baud_count <= baud_count + 1'b1;
+					if(clock_count == half_bit_time)begin
+					/* the sampling now will be centered */
+						clock_count<=0;
+						state <= DELAY;					
+					end else begin	
+					/* it hasn't reached the middle of start bit,
+					 so increase the clock count*/
+						clock_count <= clock_count + 1'b1;
 						state <= START;
-						end
+					end
 				DELAY:
-					if(baud_count >= bit_time)begin
-						baud_count <=0;
-						if(bit_number< Nbit)
-							state <= SHIFT;		//go for a new bit
-						else
+					if(clock_count >= bit_time)begin
+						/* Sample the bit now.It's in the middle of the signal */
+						clock_count <=0;
+						buff_rx[bit_number] <= SerialDataIn;
+
+						if(bit_number< Nbit)begin							
+							//go for a new bit
+							bit_number <= bit_number + 1'b1;
+							state <= DELAY;		
+						end else begin
+							/* Point to 0 space */
+							bit_number <= 0;
 							state <= STOP;	//a bit had been received
 						end 
-					else begin
-						baud_count <= baud_count + 1'b1;
+					end else begin
+						clock_count <= clock_count + 1'b1;
 						state <=DELAY;	//keep in delay state
-					end
-				SHIFT:
-					begin
-						buff_rx[Nbit-1] <= SerialDataIn;
-						//buff_rx[7] <= SerialDataIn;
-						buff_rx[Nbit-2:0] <= buff_rx[Nbit-1:1]; //shift data
-						//buff_rx[6:0] <= buff_rx[7:1]; //shift data
-						bit_number <= bit_number + 1'b1;
-						state <=DELAY;
-					end											
+					end				
 				STOP:
 					begin
-						Rx_flag <=1; //Data received is completed
-						if(SerialDataIn==0)
-							rx_parity <=1; //The received parity is even 
-						else
-							rx_parity <=0; //The received parity is odd 
-						state <= IDLE;
+						if(clock_count >= bit_time)begin
+							clock_count <= 	0;
+							Rx_flag 	<=	1;
+							state <= IDLE;
+						end else begin
+							clock_count <= clock_count+1;	
+							state 		<= STOP;					  
+						end
 					end	
+				DEFAULT:
+					state <= IDLE;
 			endcase				
 		end
 	end
-wire enable_paritycheck;
+end
+
+
+/* wire enable_paritycheck;
 assign enable_paritycheck = Rx_flag ;
 
 parityCheck
@@ -163,7 +182,7 @@ parityErr
 	.rx_parity(rx_parity),
 	.Parity_error(Parity_error)
 );
-
+ */
 
 
 /*Log Function*/

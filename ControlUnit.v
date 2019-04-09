@@ -28,6 +28,8 @@ module ControlUnit
     input [5:0]Opcode,
     input [5:0]Funct,
     input Zero,
+    input flag_uartdone,
+    output clr_rx_flag,
     /* Outputs */
     output IorD,
     output MemWrite,
@@ -50,7 +52,8 @@ module ControlUnit
     output flag_sw_out,
     output mult_operation_out,
     output mflo_flag_out,
-    output selectPC_out);
+    output selectPC_out,
+    output immediate_src_out);
 
 //###################### Variables ########################
 
@@ -66,6 +69,7 @@ wire [1:0] flag_J_type_wire;
 wire [3:0]ALUControl_wire;
 wire mult_operation_wire;
 wire mflo_flag_wire;
+wire immediate_selector_wire;
 
 reg IorD_reg;
 reg MemWrite_reg;
@@ -87,6 +91,8 @@ reg PC_En_reg;
 reg mult_operation_reg;
 reg mflo_flag_reg;
 reg selectPC_reg;
+reg immediate_selector_reg;
+reg clr_rx_flag_reg;
 
 
 assign IorD = IorD_reg;
@@ -110,6 +116,8 @@ assign flag_sw_out = flag_sw_wire;
 assign mult_operation_out = mult_operation_reg;
 assign mflo_flag_out = mflo_flag_reg;
 assign selectPC_out = selectPC_reg;
+assign immediate_src_out = immediate_selector_reg;
+assign clr_rx_flag = clr_rx_flag_reg;
 //####################     Assignations   #######################
 //assign AND1_wire = Branch & Zero;
 //assign PC_En  = AND1_wire | PCWrite | PC_En_reg;    /* Signal for Program counter enable register */
@@ -130,7 +138,8 @@ decode_instruction decoder_module
     .flag_J_type(flag_J_type_wire),
 	.mux4selector(ALUSrcB_wire),    //allows to select the operand for getting srcB number
     .mult_operation(mult_operation_wire),
-    .mflo_flag(mflo_flag_wire)
+    .mflo_flag(mflo_flag_wire),
+    .immediate_src(immediate_selector_wire)
 );
 
 
@@ -142,21 +151,23 @@ always @(posedge clk or negedge reset) begin
         case(state)
             IDLE:
             begin
-                if(count_state==3'd1)
-                    state <= FETCH;
-                else if(count_state ==3'd0) /* remain in the same state: IDLE */
-                    state <= IDLE;
+//                if(count_state==3'd1 )
+//                    state <= FETCH;
+//                else if(count_state ==3'd0 ) /* remain in the same state: IDLE */
+//                    state <= IDLE;
+                state <= FETCH;
             end
             FETCH:
             begin
-                if(count_state==3'd2)
-                    state <= DECODE;
-                else if(count_state==3'd1)    /* remain in FETCH */
-                    state <= FETCH;
+//                if(count_state==3'd2 )
+//                    state <= DECODE;
+//                else if(count_state==3'd1)    /* remain in FETCH */
+//                    state <= FETCH;
+                state <= DECODE;
             end
             DECODE:
             begin
-                if(count_state==3'd3)begin
+//                if(count_state==3'd3)begin
 
                     if(flag_R_type_wire ==1'b1)begin /* Execute a R type operation */
                     /* the decoder already determined the needed ALU operation */
@@ -181,6 +192,10 @@ always @(posedge clk or negedge reset) begin
                                 /*@TODO: edit this */
                                 state <= BRANCH_EQUAL_GET_ADDR;
                             end 
+                            6'b000110:      /* Uart_rx - 0x06 */
+                            begin 
+                                state <= EXECUTE;
+                            end
                             6'b001000:      /* Addi - 0x08 */
                             begin 
                                 state <= EXECUTE;
@@ -220,8 +235,7 @@ always @(posedge clk or negedge reset) begin
                     end
                     else if(flag_J_type_wire > 2'd0)begin /* >0 to include j and jr instructions */
                         
-                        state <= EXEC_JUMP;
-                        //state <= EXECUTE;
+                        state <= EXEC_JUMP;                
                     
                     end  
                     else begin
@@ -229,34 +243,31 @@ always @(posedge clk or negedge reset) begin
                         state <= FETCH;     /* Should not reach this point */                    
                     end
 
-                end else if(count_state==3'd2)  /* remain in DECODE */
-                    state <= DECODE;
+//                end else if(count_state==3'd2)  /* remain in DECODE */
+//                    state <= DECODE;
             end
 
             EXECUTE:            /* count_state = 3 */
             begin
-                if(count_state==3'd4)begin
-//                    if(flag_J_type_wire > 2'd0)
-//                        state <= UPDATE_PC;
-//                    else 
-                        state<=WRITE_BACKTOREG;          
-                 end else if(count_state==3'd3)          /* Remain in EXECUTE */
-                    state <= EXECUTE;
+//                if(count_state==3'd4)begin
+//                    state<=WRITE_BACKTOREG;
+//                 end else if(count_state==3'd3)          /* Remain in EXECUTE */
+//                    state <= EXECUTE;
+                state<=WRITE_BACKTOREG;
             end
             WRITE_BACKTOREG:        /* Write to RAM */ /* Request to write back to register file */
             begin
 
-//                if(count_state==3'd1)       /* Go and do another stuff from the beginning*/
-//                    state <= FETCH;
-                if(count_state==3'd5)       /* Go and do another stuff from the beginning*/
-                    state <= DUMMY;
-                else if(count_state == 3'd4)      /* Remain in WRITE_BACKTOREG */
-                    state <= WRITE_BACKTOREG;
+//                if(count_state==3'd5)       /* Go and do another stuff from the beginning*/
+//                    state <= DUMMY;
+//                else if(count_state == 3'd4)      /* Remain in WRITE_BACKTOREG */
+//                    state <= WRITE_BACKTOREG;
+                state <= DUMMY;
             end
             GET_EFFECTIVE_ADDR:         /* count_state = 3 */
             begin
                 /* Get the effective address for Store operation */
-                if(count_state==3'd4)begin
+//                if(count_state==3'd4)begin
                     
                     if(flag_sw_wire == 1'b1)begin    /* Check if store instruction was requested*/                     
                         state <= STORE;     /* Write to memory from reg */
@@ -265,35 +276,38 @@ always @(posedge clk or negedge reset) begin
                         state <= LOAD;      /* Read from memory to reg */
                     end
 
-                end else if(count_state == 3'd3)
-                    state <=GET_EFFECTIVE_ADDR;
+//                end else if(count_state == 3'd3)
+//                    state <=GET_EFFECTIVE_ADDR;
             end
 
             STORE:      /* Save from a register to memory. Write to memory from reg  */
             begin
-                if(count_state==3'd5)
-                    state <= DUMMY;
-                else if(count_state == 3'd4)
-                    state <=STORE;
+//                if(count_state==3'd5)
+//                    state <= DUMMY;
+//                else if(count_state == 3'd4)
+//                    state <=STORE;
+                state <= DUMMY;
             end
             DUMMY:
             begin
-                if(count_state==3'd1)
-                    state <= FETCH;
-                else if(count_state == 3'd5)
-                    state <=DUMMY;
+//                if(count_state==3'd1)
+//                    state <= FETCH;
+//                else if(count_state == 3'd5)
+//                    state <=DUMMY;
+                state <= FETCH;
             end
             LOAD:       /* Copy from memory to a register */
             begin
 
-                if(count_state==3'd5)
-                    state <= DUMMY;
-                else if(count_state == 3'd4)
-                    state <=LOAD;
+//                if(count_state==3'd5)
+//                    state <= DUMMY;
+//                else if(count_state == 3'd4)
+//                    state <=LOAD;
+                state <= DUMMY;
             end
             BRANCH_EQUAL_GET_ADDR:         /* count_state = 3 */
             begin
-                if(count_state==3'd4)
+//                if(count_state==3'd4)
                     
                     case(Opcode)
                         6'b000100:      /* Beq - 0x04 */
@@ -311,36 +325,40 @@ always @(posedge clk or negedge reset) begin
                         end                        
                     endcase
                     
-                else if(state == 4'd3)
-                    state <=BRANCH_EQUAL_GET_ADDR;
+//                else if(state == 4'd3)
+//                    state <=BRANCH_EQUAL_GET_ADDR;
             end
             BRANCH_EQUAL_COMPARE:
             begin
-                if(count_state==3'd5)
-                    state <= DUMMY;
-                else if(state == 4'd4)
-                    state <=BRANCH_EQUAL_COMPARE;
+//                if(count_state==3'd5)
+//                    state <= DUMMY;
+//                else if(state == 4'd4)
+//                    state <=BRANCH_EQUAL_COMPARE;
+                state <= DUMMY;
             end
             NOTBRANCH_EQUAL_COMPARE:
             begin
-                if(count_state==3'd5)
-                    state <= DUMMY;
-                else if(state == 4'd4)
-                    state <=NOTBRANCH_EQUAL_COMPARE;              
+//                if(count_state==3'd5)
+//                    state <= DUMMY;
+//                else if(state == 4'd4)
+//                    state <=NOTBRANCH_EQUAL_COMPARE;              
+                state <= DUMMY;
             end
             EXEC_JUMP:
             begin
-                if(count_state==3'd4)
-                    state <= UPDATE_PC;
-                else if(state == 4'd3)
-                    state <=EXEC_JUMP;
+//                if(count_state==3'd4)
+//                    state <= UPDATE_PC;
+//                else if(state == 4'd3)
+//                    state <=EXEC_JUMP;
+                state <= UPDATE_PC;
             end
             UPDATE_PC:
             begin
-                if(count_state==3'd5)   
-                    state <= DUMMY;
-                else if(state == 4'd4)
-                    state <=UPDATE_PC;
+//                if(count_state==3'd5)   
+//                    state <= DUMMY;
+//                else if(state == 4'd4)
+//                    state <=UPDATE_PC;
+                state <= DUMMY;
             end
 
             default:
@@ -351,8 +369,9 @@ always @(posedge clk or negedge reset) begin
     end 
 end
 
-always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_lw_wire,flag_sw_wire,mflo_flag_wire,mult_operation_wire)begin 
+always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_lw_wire,flag_sw_wire,mflo_flag_wire,mult_operation_wire,immediate_selector_wire)begin 
     case(state)
+        
         IDLE:
         begin
             //PC_En_reg       =0; /* Control signal for the PC flip flop */
@@ -375,6 +394,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =1; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
+            clr_rx_flag_reg =0;
+            immediate_selector_reg<=0;
         end
         FETCH:
         begin
@@ -402,6 +423,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =1; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
+            clr_rx_flag_reg =0;
+            immediate_selector_reg<=0;
         end
         DECODE:
         begin
@@ -431,6 +454,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
+            clr_rx_flag_reg =1;
+            immediate_selector_reg<=immediate_selector_wire;
         end
 
         EXECUTE:
@@ -450,7 +475,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             MemtoReg_reg    =0;	/* not relevant */
             RegDst_reg      =destination_indicator_wire; /* not relevant */
             RegWrite_reg    <=0; /* not relevant */
-            RDx_FF_en_reg   =0; /* not relevant */
+            RDx_FF_en_reg   =1; /* not relevant */
             ALUSrcB_reg     <=ALUSrcB_wire; /* Allows to select the operand (on Mux 4:1) for getting srcB number */
             ALUControl_reg  <=ALUControl_wire; /* Selects ALU operation */
             ALUSrcA_reg     =1; /* Select data from A , RD1 */	
@@ -461,7 +486,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             mult_operation_reg = 0;
             //mflo_flag_reg = 0;
             mflo_flag_reg = mflo_flag_wire; /* on mflo inst, enable passing data to Aluout reg */
-            
+            clr_rx_flag_reg =0;      
+            immediate_selector_reg<=immediate_selector_wire;      
         end
         EXEC_JUMP:
         begin
@@ -488,6 +514,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             
             mult_operation_reg = 0;
             mflo_flag_reg = 0;
+            clr_rx_flag_reg =0;
+            immediate_selector_reg<=0;
         end
         UPDATE_PC:
         begin
@@ -515,6 +543,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
+            clr_rx_flag_reg =0;
+            immediate_selector_reg<=0;
         end 
         WRITE_BACKTOREG:
         begin
@@ -540,6 +570,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = mult_operation_wire ;
             mflo_flag_reg <= mflo_flag_wire;
+            clr_rx_flag_reg =0;
+            immediate_selector_reg<=0;
         end
         GET_EFFECTIVE_ADDR:     /* For sw operation */
         begin
@@ -569,6 +601,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
+            clr_rx_flag_reg =0;
+            immediate_selector_reg<=0;
         end 
         STORE:
         begin
@@ -592,6 +626,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
+            clr_rx_flag_reg =0;
+            immediate_selector_reg<=0;
         end
         DUMMY:
         begin
@@ -614,6 +650,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
+            clr_rx_flag_reg =0;
+            immediate_selector_reg<=0;
         end
         LOAD:
         begin
@@ -637,6 +675,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
+            clr_rx_flag_reg =0;
+            immediate_selector_reg<=0;
 
         end
         BRANCH_EQUAL_GET_ADDR:
@@ -662,6 +702,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* Signal to enable updating Program Counter */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
+            clr_rx_flag_reg =0;
+            immediate_selector_reg<=0;
         end
         BRANCH_EQUAL_COMPARE:
         begin 
@@ -686,6 +728,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* Signal to enable updating Program Counter */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
+            clr_rx_flag_reg =0;
+            immediate_selector_reg<=0;
         end 
         NOTBRANCH_EQUAL_COMPARE:
         begin 
@@ -710,6 +754,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* Signal to enable updating Program Counter */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
+            clr_rx_flag_reg =0;
+            immediate_selector_reg<=0;
         end 
         default:
         begin 
@@ -733,6 +779,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
+            clr_rx_flag_reg =0;
+            immediate_selector_reg<=0;
         end
     endcase
 end 

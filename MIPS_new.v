@@ -7,12 +7,22 @@
 module MIPS_new
 #(
     parameter DATA_WIDTH=32,	/* length of data */
-    parameter ADDR_WIDTH=8 		/* bits to address the elements */
+    parameter ADDR_WIDTH=8,		/* bits to address the elements */    
+    //UART RX
+    parameter UART_Nbit =8,
+    parameter baudrate =9600,
+    parameter clk_freq = 50000000   
 )
 (
     input clk, 					/* clk signal */
     input reset, 				/* async signal to reset */	
     input [2:0]count_state, 		/* 7 states */
+    //UART RX
+    input SerialDataIn, //it's the input data port 
+    //input clr_rx_flag, //to clear the Rx signal. 0=start new Reception, 1=stop, clear flag after reading the data
+    output Rx_flag,  //indicates the data was completely received 
+    output [UART_Nbit-1:0] DataRx/*synthesis keep*/, //Port where Rx information is available
+    //
     output [7:0] gpio_data_out
     //output [7 : 0] copyRD1
 );
@@ -36,33 +46,33 @@ Signals for ALU unit
 wire zero;							//zero flag
 wire carry;							//carry flag
 wire negative;						//negative flag
-wire [DATA_WIDTH-1:0]shifted2;		//4th input for ALU: shifted by 2 data
-wire [DATA_WIDTH-1:0] SrcA;			//input 0 of ALU
-wire [DATA_WIDTH-1:0] SrcB;			//input 1 of ALU
-wire [3:0]ALUControl_wire; 			//@Control signal: Selects addition operation (010b)
-wire [DATA_WIDTH-1 : 0]ALUResult;	//Output result of ALU unit
-wire [DATA_WIDTH-1 : 0]ALUResult_tmp;	//Output result of ALU unit
-wire [DATA_WIDTH-1 : 0]ALUOut;		//Registerd output of ALU
-wire [1:0]sel_muxALU_srcB; 			//@Control signal: allows to select the operand for getting srcB number on mux 'Mux4_1_forALU'
-wire ALUSrcA_wire;					//@Control signal: allow to select the SrcA source. 0=PC, 1=RD1
-wire ALUresult_en_wire;				//@Control signal: enables the FF at ALUout
+wire [DATA_WIDTH-1:0]shifted2/*synthesis keep*/;		//4th input for ALU: shifted by 2 data
+wire [DATA_WIDTH-1:0] SrcA/*synthesis keep*/;			//input 0 of ALU
+wire [DATA_WIDTH-1:0] SrcB/*synthesis keep*/;			//input 1 of ALU
+wire [3:0]ALUControl_wire/*synthesis keep*/; 			//@Control signal: Selects addition operation (010b)
+wire [DATA_WIDTH-1 : 0]ALUResult/*synthesis keep*/;	//Output result of ALU unit
+wire [DATA_WIDTH-1 : 0]ALUResult_tmp/*synthesis keep*/;	//Output result of ALU unit
+wire [DATA_WIDTH-1 : 0]ALUOut/*synthesis keep*/;		//Registerd output of ALU
+wire [1:0]sel_muxALU_srcB/*synthesis keep*/; 			//@Control signal: allows to select the operand for getting srcB number on mux 'Mux4_1_forALU'
+wire ALUSrcA_wire/*synthesis keep*/;					//@Control signal: allow to select the SrcA source. 0=PC, 1=RD1
+wire ALUresult_en_wire/*synthesis keep*/;				//@Control signal: enables the FF at ALUout
 
 /***************************************************************
 Signals for Register File
 ***************************************************************/
-wire [DATA_WIDTH-1 : 0] RD1; 
-wire [DATA_WIDTH-1 : 0] RD2;
-wire [1:0] RegDst_wire;					/*@Control signal: for Write reg in Register File */
-wire [1:0]MemtoReg_wire;					/*@Control signal: for the Mux from ALU to Register File */
-wire RegWrite_wire;					/*@Control signal: Write enable for register file unit*/
-wire [DATA_WIDTH-1:0]datatoWD3;   	/* Conexion from MUX to select a Data from Memory or from ALU. 0=ALU,1=Memory */
-wire [DATA_WIDTH-1:0]DataMemory;	/* Output of FF from Data Memory  */	
+wire [DATA_WIDTH-1 : 0] RD1/*synthesis keep*/; 
+wire [DATA_WIDTH-1 : 0] RD2/*synthesis keep*/;
+wire [1:0] RegDst_wire/*synthesis keep*/;					/*@Control signal: for Write reg in Register File */
+wire [1:0]MemtoReg_wire/*synthesis keep*/;					/*@Control signal: for the Mux from ALU to Register File */
+wire RegWrite_wire/*synthesis keep*/;					/*@Control signal: Write enable for register file unit*/
+wire [DATA_WIDTH-1:0]datatoWD3/*synthesis keep*/;   	/* Conexion from MUX to select a Data from Memory or from ALU. 0=ALU,1=Memory */
+wire [DATA_WIDTH-1:0]DataMemory/*synthesis keep*/;	/* Output of FF from Data Memory  */	
 wire RDx_FF_en_wire;				/*@Control signal: to enable FF to MUX to ALU */
 /***************************************************************
 Signals for Sign Extend module
 ***************************************************************/
-wire [DATA_WIDTH-1:0] sign_extended_out;
-
+wire [DATA_WIDTH-1:0] sign_extended_out/*synthesis keep*/;
+wire immediate_selector/*synthesis keep*/;
 /***************************************************************
 Signals for Address preparation module
 ***************************************************************/
@@ -74,12 +84,13 @@ wire [4 : 0]rd_wire/*synthesis keep*/;		  			//Destination: 15:11 bit (R type)
 wire [4 : 0]shamt_wire/*synthesis keep*/;				//shamt field (R type)
 wire [5 : 0]funct_wire/*synthesis keep*/;				//select the function
 wire [15: 0]immediate_data_wire/*synthesis keep*/;		//immediate field (I type)
+wire [15: 0]immediateData_toextend/*synthesis keep*/;		
 wire [25: 0]address_j_wire/*synthesis keep*/;			//address field for (J type)
 
 /***************************************************************
 Signals for A3 Destination mux
 ***************************************************************/
-wire [4:0]mux_A3out;
+wire [4:0]mux_A3out/*synthesis keep*/;
 /***************************************************************
 Signals for Branch instructions
 ***************************************************************/
@@ -120,26 +131,58 @@ wire gpio_enable/*synthesis keep*/;
 /* wire [7:0] gpio_data_out; */
 wire sw_inst_detector;
 wire demuxSelector_wire;
-wire [DATA_WIDTH-1:0]Gpio_data_input;
+wire [DATA_WIDTH-1:0]Gpio_data_input/*synthesis keep*/;
 /***************************************************************
 Signals for Lo and Hi registers
 ***************************************************************/
-wire [DATA_WIDTH-1:0]lo_data;
-wire hi_data;
-wire enable_lo_hi;
+wire [DATA_WIDTH-1:0]lo_data/*synthesis keep*/;
+wire hi_data/*synthesis keep*/;
+wire enable_lo_hi/*synthesis keep*/;
 /***************************************************************
 Signals for Lo-Hi demux
 ***************************************************************/
-wire [DATA_WIDTH-1:0] demux_aluout_0;
-wire [DATA_WIDTH-1:0] demux_aluout_1;
-wire demux_aluout_sel;
+wire [DATA_WIDTH-1:0] demux_aluout_0/*synthesis keep*/ ;
+wire [DATA_WIDTH-1:0] demux_aluout_1/*synthesis keep*/;
+wire demux_aluout_sel/*synthesis keep*/;
 /***************************************************************
 Signals for MUX ALU result / Lo Reg
 ***************************************************************/
 wire mflo_flag;
+/***************************************************************
+Signals for UART
+***************************************************************/
+//wire [UART_Nbit-1:0] DataRx; //Port where Rx information is available
+wire [UART_Nbit-1:0] DataRx_tmp/*synthesis keep*/;
+wire clr_rx_flag/*synthesis keep*/; //to clear the Rx signal. 0=start new Reception, 1=stop, clear flag after reading the data
 
-/* assign copyRD1 = RD1[7:0]; */
+assign copyRD1 = RD1[7:0]/*synthesis keep*/; 
 //assign copyRD1 = gpio_data_out;
+
+//####################     UART RX                #######################
+UART_RX #(
+	.Nbit(UART_Nbit),
+	.baudrate(baudrate)	
+)
+DUV_RX
+(
+	.SerialDataIn(SerialDataIn), //it's the input data port 
+	.clk(clk), //clk signal
+	.reset(reset), //async signal to reset 
+	.clr_rx_flag(clr_rx_flag), //to clear the Rx signal
+	//outputs	
+	.DataRx(DataRx_tmp), //Port where Rx information is available
+	.Rx_flag(Rx_flag) //indicates a data was received
+	
+);
+//####################     ASCII translator unit   #######################
+ASCI_translator #(
+    .Nbits(UART_Nbit)
+)ASCII_Trans
+(
+    .Data_in(DataRx_tmp),
+    .Data_out(DataRx)
+);
+
 
 //####################     GPIO controller unit   #######################
 GPIO_controller #(
@@ -199,6 +242,8 @@ ControlUnit CtrlUnit(
     .Opcode(opcode_wire),
     .Funct(funct_wire),
     .Zero(zero),
+    .flag_uartdone(Rx_flag),
+    .clr_rx_flag(clr_rx_flag),
     /* Outputs */
     .IorD(IorD_wire),
     .MemWrite(MemWrite_wire),
@@ -221,7 +266,8 @@ ControlUnit CtrlUnit(
     .flag_sw_out(sw_inst_detector),
     .mult_operation_out(demux_aluout_sel),		//this controls if the result is saved in Lo-Hi reg(1) or Reg file (0)
     .mflo_flag_out(mflo_flag),
-    .selectPC_out(startPC_wire)
+    .selectPC_out(startPC_wire),
+    .immediate_src_out(immediate_selector)
 );
 
 //####################     Address preparation   #######################
@@ -357,10 +403,22 @@ mux4to1 #(
     .data4(0),                      //@TODO: for future use
     .Data_out(datatoWD3) 				//This have the Address for Memory input
 );
+
+
+//###############   FF, from PC to Memory Unit     ##################
+mux2to1#(16)
+MUX_immed_Source
+(
+    .mux_sel(immediate_selector),				//@Control signal: Immediate source, 0=address preparation , 1=UART register
+    .data1(immediate_data_wire), 				//0=Comes from immediate field in the instruction	    
+    .data2(  {{8{1'b0}}, DataRx}), 				//1=From UART buffer
+    .Data_out(immediateData_toextend) 	//this have the Address for Memory input
+);
+
 //####################  Sign extend Module  ###############
 SignExtend_module signExt
 (
-    .immediate(immediate_data_wire),
+    .immediate(immediateData_toextend),
     .extended_sign_out(sign_extended_out)
 );
 

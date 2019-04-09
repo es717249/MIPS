@@ -2,7 +2,7 @@
 main:
 	lui	$sp,0x1001
 	ori	$sp,$sp,0x0100
-	addi $a0,$a0,7 # Loading constant
+	addi $a0,$a0,9 # Loading constant
 	jal Factorial # Calling procedure
 	j Exit	# Jump to Main label
 	
