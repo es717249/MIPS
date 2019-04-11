@@ -2,8 +2,8 @@ onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate -color Magenta /MIPS_new_TB/clk
 add wave -noupdate /MIPS_new_TB/reset
-add wave -noupdate -color Gold -label cycle_cnt /MIPS_new_TB/testing_unit/CtrlUnit/count_state
-add wave -noupdate -color Magenta -label current_machCycle_St /MIPS_new_TB/testing_unit/CtrlUnit/state
+add wave -noupdate -color Magenta -label count_state /MIPS_new_TB/state
+add wave -noupdate -color Yellow -label state_controlUnit /MIPS_new_TB/testing_unit/CtrlUnit/state
 add wave -noupdate -color Red -label Instruction_fetched -radix hexadecimal /MIPS_new_TB/testing_unit/Reg_forInstruction/Data_Output
 add wave -noupdate -divider MemoryMIPS
 add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/MemoryMIPS/addr
@@ -14,30 +14,22 @@ add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/MemoryMIPS/mem_sel
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MemoryMIPS/q
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MemoryMIPS/q_rom
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MemoryMIPS/q_ram
-add wave -noupdate -divider Virtual_Memory_ROM
+add wave -noupdate -divider Virtual_Memory
+add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/VirtualMem/address
+add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/VirtualMem/translated_addr
 add wave -noupdate -color Coral -radix hexadecimal /MIPS_new_TB/testing_unit/VirtualMem/MIPS_address
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/VirtualMem/translated_addr
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/VirtualMem/aligment_error
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/VirtualMem/add_tmp
 add wave -noupdate -divider Virtual_Mem_RAM
-add wave -noupdate -color Coral -radix hexadecimal /MIPS_new_TB/testing_unit/VirtualRAM_Mem/MIPS_address
+add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/VirtualRAM_Mem/address
 add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/VirtualRAM_Mem/translated_addr
+add wave -noupdate -color Coral -radix hexadecimal /MIPS_new_TB/testing_unit/VirtualRAM_Mem/MIPS_address
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/VirtualRAM_Mem/aligment_error
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/VirtualRAM_Mem/add_tmp
 add wave -noupdate -divider GPIO
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/GPIO/addr_ram
 add wave -noupdate /MIPS_new_TB/testing_unit/GPIO/wdata
-add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/GPIO/enable_write
+add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/GPIO/enable_sw
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/GPIO/gpio_data_out
-add wave -noupdate -divider Register_file
-add wave -noupdate /MIPS_new_TB/testing_unit/RegisterFile_Unit/clk
-add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/RegisterFile_Unit/Read_Reg1
-add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/RegisterFile_Unit/Read_Reg2
-add wave -noupdate -label mux_A3out -radix unsigned /MIPS_new_TB/testing_unit/RegisterFile_Unit/Write_Reg
-add wave -noupdate -label datatoWD3 -radix hexadecimal /MIPS_new_TB/testing_unit/RegisterFile_Unit/Write_Data
-add wave -noupdate -color Yellow -label RegWrite_wire -radix unsigned /MIPS_new_TB/testing_unit/RegisterFile_Unit/Write
-add wave -noupdate -color {Orange Red} -label RD1 -radix hexadecimal /MIPS_new_TB/testing_unit/RegisterFile_Unit/Read_Data1
-add wave -noupdate -color {Orange Red} -label RD2 -radix hexadecimal /MIPS_new_TB/testing_unit/RegisterFile_Unit/Read_Data2
 add wave -noupdate -divider Reg_forInstruction
 add wave -noupdate /MIPS_new_TB/testing_unit/Reg_forInstruction/clk
 add wave -noupdate /MIPS_new_TB/testing_unit/Reg_forInstruction/reset
@@ -71,55 +63,27 @@ add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/alu_unit/carry
 add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/alu_unit/zero
 add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/alu_unit/negative
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/alu_unit/dataC
-add wave -noupdate -divider Mux_Alu_lo
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/mux_ALU_Lo_reg/mux_sel
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/mux_ALU_Lo_reg/data1
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/mux_ALU_Lo_reg/data2
-add wave -noupdate -color Red -radix hexadecimal /MIPS_new_TB/testing_unit/mux_ALU_Lo_reg/Data_out
 add wave -noupdate -divider ALUOut_Reg
 add wave -noupdate /MIPS_new_TB/testing_unit/Mem_forALUOut/clk
 add wave -noupdate /MIPS_new_TB/testing_unit/Mem_forALUOut/reset
 add wave -noupdate -color Red -label ALUresult_en_wire -radix unsigned /MIPS_new_TB/testing_unit/Mem_forALUOut/enable
 add wave -noupdate -label ALUResult -radix hexadecimal /MIPS_new_TB/testing_unit/Mem_forALUOut/Data_Input
 add wave -noupdate -label ALUOut -radix hexadecimal /MIPS_new_TB/testing_unit/Mem_forALUOut/Data_Output
-add wave -noupdate -divider Lo_Reg
-add wave -noupdate /MIPS_new_TB/testing_unit/Lo_Reg/clk
-add wave -noupdate /MIPS_new_TB/testing_unit/Lo_Reg/reset
-add wave -noupdate /MIPS_new_TB/testing_unit/Lo_Reg/enable
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/Lo_Reg/Data_Input
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/Lo_Reg/Data_Output
 add wave -noupdate -divider MUX_from_PC_to_Mem_Unit
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_from_PC_to_Mem_Unit/mux_sel
+add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/MUX_from_PC_to_Mem_Unit/mux_sel
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_from_PC_to_Mem_Unit/data1
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_from_PC_to_Mem_Unit/data2
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_from_PC_to_Mem_Unit/Data_out
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_from_PC_to_Mem_Unit/mux_output
 add wave -noupdate -divider MUX_for_PC_Source
 add wave -noupdate -label PCSrc_wire -radix unsigned /MIPS_new_TB/testing_unit/MUX_for_PC_source/mux_sel
 add wave -noupdate -label ALUResult -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_for_PC_source/data1
 add wave -noupdate -label ALUOut -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_for_PC_source/data2
 add wave -noupdate -label PC_source -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_for_PC_source/Data_out
-add wave -noupdate -divider Demux_aluout
-add wave -noupdate -color Red -radix hexadecimal /MIPS_new_TB/testing_unit/demux_aluout/Demux_Input
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/demux_aluout/Selector
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/demux_aluout/Dataout0
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/demux_aluout/Dataout1
-add wave -noupdate -divider ShiftConcatenate
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/shiftConcat_mod/J_address
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/shiftConcat_mod/PC_add
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/shiftConcat_mod/new_jumpAddr
-add wave -noupdate -divider Mux_toUpdate_PC_wJump
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_to_updatePC_withJump/mux_sel
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_to_updatePC_withJump/data1
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_to_updatePC_withJump/data2
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_to_updatePC_withJump/data3
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_to_updatePC_withJump/data4
-add wave -noupdate -color Red -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_to_updatePC_withJump/Data_out
 add wave -noupdate -divider ProgramCounter_Reg
 add wave -noupdate /MIPS_new_TB/testing_unit/ProgramCounter_Reg/clk
 add wave -noupdate /MIPS_new_TB/testing_unit/ProgramCounter_Reg/reset
 add wave -noupdate -color {Blue Violet} -label PC_En_wire -radix unsigned /MIPS_new_TB/testing_unit/ProgramCounter_Reg/enable
-add wave -noupdate -label PC_new -radix hexadecimal /MIPS_new_TB/testing_unit/ProgramCounter_Reg/Data_Input
+add wave -noupdate -label PC_source -radix hexadecimal /MIPS_new_TB/testing_unit/ProgramCounter_Reg/Data_Input
 add wave -noupdate -label PC_current -radix hexadecimal /MIPS_new_TB/testing_unit/ProgramCounter_Reg/Data_Output
 add wave -noupdate -divider decode_instruction
 add wave -noupdate /MIPS_new_TB/testing_unit/CtrlUnit/decoder_module/opcode_reg
@@ -142,21 +106,29 @@ add wave -noupdate /MIPS_new_TB/testing_unit/add_prep/address_j
 add wave -noupdate /MIPS_new_TB/testing_unit/add_prep/shamt
 add wave -noupdate /MIPS_new_TB/testing_unit/add_prep/funct
 add wave -noupdate -divider MUX_to_WriteData_RegFile
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_to_WriteData_RegFile/mux_sel
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_to_WriteData_RegFile/data1
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_to_WriteData_RegFile/data2
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_to_WriteData_RegFile/data3
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_to_WriteData_RegFile/data4
-add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/MUX_to_WriteData_RegFile/Data_out
+add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/MUX_to_WriteData_RegFile/mux_sel
+add wave -noupdate /MIPS_new_TB/testing_unit/MUX_to_WriteData_RegFile/data1
+add wave -noupdate /MIPS_new_TB/testing_unit/MUX_to_WriteData_RegFile/data2
+add wave -noupdate /MIPS_new_TB/testing_unit/MUX_to_WriteData_RegFile/Data_out
 add wave -noupdate -divider mux_A3_destination
 add wave -noupdate -radix hexadecimal /MIPS_new_TB/testing_unit/mux_A3_destination/mux_sel
 add wave -noupdate /MIPS_new_TB/testing_unit/mux_A3_destination/data1
 add wave -noupdate /MIPS_new_TB/testing_unit/mux_A3_destination/data2
 add wave -noupdate /MIPS_new_TB/testing_unit/mux_A3_destination/Data_out
+add wave -noupdate -divider Register_file
+add wave -noupdate /MIPS_new_TB/testing_unit/RegisterFile_Unit/clk
+add wave -noupdate /MIPS_new_TB/testing_unit/RegisterFile_Unit/reset
+add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/RegisterFile_Unit/Read_Reg1
+add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/RegisterFile_Unit/Read_Reg2
+add wave -noupdate -label mux_A3out -radix unsigned /MIPS_new_TB/testing_unit/RegisterFile_Unit/Write_Reg
+add wave -noupdate -label datatoWD3 -radix hexadecimal /MIPS_new_TB/testing_unit/RegisterFile_Unit/Write_Data
+add wave -noupdate -color Yellow -label RegWrite_wire -radix unsigned /MIPS_new_TB/testing_unit/RegisterFile_Unit/Write
+add wave -noupdate -color {Orange Red} -label RD1 -radix hexadecimal /MIPS_new_TB/testing_unit/RegisterFile_Unit/Read_Data1
+add wave -noupdate -color {Orange Red} -label RD2 -radix hexadecimal /MIPS_new_TB/testing_unit/RegisterFile_Unit/Read_Data2
 add wave -noupdate -divider Control_unit
 add wave -noupdate /MIPS_new_TB/testing_unit/CtrlUnit/clk
 add wave -noupdate /MIPS_new_TB/testing_unit/CtrlUnit/reset
-add wave -noupdate -color Magenta /MIPS_new_TB/testing_unit/CtrlUnit/count_state
+
 add wave -noupdate /MIPS_new_TB/testing_unit/CtrlUnit/Opcode
 add wave -noupdate /MIPS_new_TB/testing_unit/CtrlUnit/Funct
 add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/CtrlUnit/Zero
@@ -166,7 +138,7 @@ add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/CtrlUnit/IRWrite
 add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/CtrlUnit/RegDst
 add wave -noupdate -color Red -radix unsigned /MIPS_new_TB/testing_unit/CtrlUnit/MemtoReg
 add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/CtrlUnit/PCWrite
-add wave -noupdate -color Red -radix unsigned /MIPS_new_TB/testing_unit/CtrlUnit/Branch
+add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/CtrlUnit/Branch
 add wave -noupdate -radix unsigned /MIPS_new_TB/testing_unit/CtrlUnit/PCSrc
 add wave -noupdate /MIPS_new_TB/testing_unit/CtrlUnit/ALUControl
 add wave -noupdate -color Magenta /MIPS_new_TB/testing_unit/CtrlUnit/ALUSrcB
@@ -178,15 +150,11 @@ add wave -noupdate /MIPS_new_TB/testing_unit/CtrlUnit/RDx_FF_en
 add wave -noupdate -color Red -radix unsigned /MIPS_new_TB/testing_unit/CtrlUnit/ALUresult_en
 add wave -noupdate /MIPS_new_TB/testing_unit/CtrlUnit/PC_En
 add wave -noupdate -color Yellow /MIPS_new_TB/testing_unit/CtrlUnit/state
-add wave -noupdate /MIPS_new_TB/testing_unit/CtrlUnit/decoder_module/mult_operation_reg
-add wave -noupdate -color Red /MIPS_new_TB/testing_unit/CtrlUnit/decoder_module/mflo_flag_reg
-add wave -noupdate /MIPS_new_TB/testing_unit/CtrlUnit/flag_J_type_out
-add wave -noupdate /MIPS_new_TB/testing_unit/CtrlUnit/flag_sw_out
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {3 ps} 0}
+WaveRestoreCursors {{Cursor 1} {350 ps} 0}
 quietly wave cursor active 1
-configure wave -namecolwidth 190
-configure wave -valuecolwidth 201
+configure wave -namecolwidth 170
+configure wave -valuecolwidth 269
 configure wave -justifyvalue left
 configure wave -signalnamewidth 1
 configure wave -snapdistance 10
@@ -199,4 +167,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {0 ps} {169 ps}
+WaveRestoreZoom {2196 ps} {2538 ps}

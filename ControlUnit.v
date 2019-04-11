@@ -23,13 +23,12 @@ module ControlUnit
 (
     /* Inputs */
     input clk,              //clk signal
-	input reset,            //async signal to reset 	
-    input [2:0]count_state, 
+	input reset,            //async signal to reset
     input [5:0]Opcode,
     input [5:0]Funct,
     input Zero,
     input flag_uartdone,
-    output clr_rx_flag,
+    //output clr_rx_flag,
     /* Outputs */
     output IorD,
     output MemWrite,
@@ -50,17 +49,19 @@ module ControlUnit
     output PC_En,
     output [1:0]flag_J_type_out,
     output flag_sw_out,
+    output flag_lw_out,
     output mult_operation_out,
     output mflo_flag_out,
     output selectPC_out,
-    output immediate_src_out);
+    output immediate_src_out,
+    output selector_peripheraldata_out);
 
 //###################### Variables ########################
 
 reg [3:0]state;     //8 available states
 wire AND1_wire;
 wire flag_sw_wire;
-wire [1:0] flag_lw_wire;
+wire flag_lw_wire;
 wire [1:0]destination_indicator_wire;
 wire [1:0]ALUSrcB_wire;
 wire flag_R_type_wire;
@@ -70,7 +71,9 @@ wire [3:0]ALUControl_wire;
 wire mult_operation_wire;
 wire mflo_flag_wire;
 wire immediate_selector_wire;
-
+wire [1:0] writedata_indicator_wire;
+wire selector_peripheraldata_wire;
+ 
 reg IorD_reg;
 reg MemWrite_reg;
 reg IRWrite_reg;
@@ -92,9 +95,10 @@ reg mult_operation_reg;
 reg mflo_flag_reg;
 reg selectPC_reg;
 reg immediate_selector_reg;
-reg clr_rx_flag_reg;
+/* reg clr_rx_flag_reg; */
+reg selector_peripheraldata_reg;
 
-
+//####################     Assignations   #######################
 assign IorD = IorD_reg;
 assign MemWrite = MemWrite_reg;
 assign IRWrite = IRWrite_reg;
@@ -113,15 +117,17 @@ assign RDx_FF_en = RDx_FF_en_reg;
 assign ALUresult_en = ALUresult_en_reg;
 assign flag_J_type_out = flag_J_type_wire;
 assign flag_sw_out = flag_sw_wire;
+assign flag_lw_out = flag_lw_wire;
 assign mult_operation_out = mult_operation_reg;
 assign mflo_flag_out = mflo_flag_reg;
 assign selectPC_out = selectPC_reg;
 assign immediate_src_out = immediate_selector_reg;
-assign clr_rx_flag = clr_rx_flag_reg;
-//####################     Assignations   #######################
-//assign AND1_wire = Branch & Zero;
-//assign PC_En  = AND1_wire | PCWrite | PC_En_reg;    /* Signal for Program counter enable register */
+/* assign clr_rx_flag = clr_rx_flag_reg; */
 assign PC_En  = Branch | PCWrite ;    /* Signal for Program counter enable register */
+
+
+assign selector_peripheraldata_out =selector_peripheraldata_reg;
+
 
 decode_instruction decoder_module
 (
@@ -136,10 +142,11 @@ decode_instruction decoder_module
     .flag_R_type(flag_R_type_wire), 
     .flag_I_type(flag_I_type_wire), 
     .flag_J_type(flag_J_type_wire),
-	.mux4selector(ALUSrcB_wire),    //allows to select the operand for getting srcB number
+	.ALUSrcBselector(ALUSrcB_wire),    //allows to select the operand for getting srcB number
     .mult_operation(mult_operation_wire),
     .mflo_flag(mflo_flag_wire),
-    .immediate_src(immediate_selector_wire)
+    .immediate_src(immediate_selector_wire),
+    .writedata_indicator(writedata_indicator_wire)    
 );
 
 
@@ -151,31 +158,21 @@ always @(posedge clk or negedge reset) begin
         case(state)
             IDLE:
             begin
-//                if(count_state==3'd1 )
-//                    state <= FETCH;
-//                else if(count_state ==3'd0 ) /* remain in the same state: IDLE */
-//                    state <= IDLE;
                 state <= FETCH;
             end
             FETCH:
             begin
-//                if(count_state==3'd2 )
-//                    state <= DECODE;
-//                else if(count_state==3'd1)    /* remain in FETCH */
-//                    state <= FETCH;
                 state <= DECODE;
             end
             DECODE:
             begin
-//                if(count_state==3'd3)begin
-
                     if(flag_R_type_wire ==1'b1)begin /* Execute a R type operation */
                     /* the decoder already determined the needed ALU operation */
                                    /* Go to execute */
-                        if(flag_J_type_wire==2'd2)begin
+                        if(flag_J_type_wire==2'd2) begin
                             state <= EXEC_JUMP;        
-                        end else 
-                            state <= EXECUTE;        
+                        end else
+                            state <= EXECUTE;
                     end 
                     else if(flag_I_type_wire ==1'b1)begin   /* Execute an I type operation */                    
                         
@@ -224,8 +221,6 @@ always @(posedge clk or negedge reset) begin
                             begin
                                 state <= GET_EFFECTIVE_ADDR;        
                             end 
-                            
-
                             default:
                             begin 
                                 state<=UNDEFINED_INSTRUCTION;
@@ -234,81 +229,45 @@ always @(posedge clk or negedge reset) begin
 
                     end
                     else if(flag_J_type_wire > 2'd0)begin /* >0 to include j and jr instructions */
-                        
-                        state <= EXEC_JUMP;                
-                    
+                        state <= EXEC_JUMP;
                     end  
                     else begin
                     
                         state <= FETCH;     /* Should not reach this point */                    
                     end
-
-//                end else if(count_state==3'd2)  /* remain in DECODE */
-//                    state <= DECODE;
             end
-
             EXECUTE:            /* count_state = 3 */
             begin
-//                if(count_state==3'd4)begin
-//                    state<=WRITE_BACKTOREG;
-//                 end else if(count_state==3'd3)          /* Remain in EXECUTE */
-//                    state <= EXECUTE;
                 state<=WRITE_BACKTOREG;
             end
             WRITE_BACKTOREG:        /* Write to RAM */ /* Request to write back to register file */
             begin
-
-//                if(count_state==3'd5)       /* Go and do another stuff from the beginning*/
-//                    state <= DUMMY;
-//                else if(count_state == 3'd4)      /* Remain in WRITE_BACKTOREG */
-//                    state <= WRITE_BACKTOREG;
                 state <= DUMMY;
             end
             GET_EFFECTIVE_ADDR:         /* count_state = 3 */
             begin
                 /* Get the effective address for Store operation */
-//                if(count_state==3'd4)begin
-                    
                     if(flag_sw_wire == 1'b1)begin    /* Check if store instruction was requested*/                     
                         state <= STORE;     /* Write to memory from reg */
                     end 
-                    else if(flag_lw_wire==2'd1)begin    /* Check if Load instruction was requested */                        
+                    else if(flag_lw_wire==1'd1)begin    /* Check if Load instruction was requested */                        
                         state <= LOAD;      /* Read from memory to reg */
                     end
-
-//                end else if(count_state == 3'd3)
-//                    state <=GET_EFFECTIVE_ADDR;
             end
-
             STORE:      /* Save from a register to memory. Write to memory from reg  */
             begin
-//                if(count_state==3'd5)
-//                    state <= DUMMY;
-//                else if(count_state == 3'd4)
-//                    state <=STORE;
                 state <= DUMMY;
             end
             DUMMY:
             begin
-//                if(count_state==3'd1)
-//                    state <= FETCH;
-//                else if(count_state == 3'd5)
-//                    state <=DUMMY;
                 state <= FETCH;
             end
             LOAD:       /* Copy from memory to a register */
             begin
-
-//                if(count_state==3'd5)
-//                    state <= DUMMY;
-//                else if(count_state == 3'd4)
-//                    state <=LOAD;
                 state <= DUMMY;
             end
             BRANCH_EQUAL_GET_ADDR:         /* count_state = 3 */
             begin
-//                if(count_state==3'd4)
-                    
                     case(Opcode)
                         6'b000100:      /* Beq - 0x04 */
                         begin 
@@ -322,54 +281,34 @@ always @(posedge clk or negedge reset) begin
                         begin
                             /* not expected */
                             state<=UNDEFINED_INSTRUCTION;
-                        end                        
+                        end
                     endcase
-                    
-//                else if(state == 4'd3)
-//                    state <=BRANCH_EQUAL_GET_ADDR;
             end
             BRANCH_EQUAL_COMPARE:
             begin
-//                if(count_state==3'd5)
-//                    state <= DUMMY;
-//                else if(state == 4'd4)
-//                    state <=BRANCH_EQUAL_COMPARE;
                 state <= DUMMY;
             end
             NOTBRANCH_EQUAL_COMPARE:
             begin
-//                if(count_state==3'd5)
-//                    state <= DUMMY;
-//                else if(state == 4'd4)
-//                    state <=NOTBRANCH_EQUAL_COMPARE;              
                 state <= DUMMY;
             end
             EXEC_JUMP:
             begin
-//                if(count_state==3'd4)
-//                    state <= UPDATE_PC;
-//                else if(state == 4'd3)
-//                    state <=EXEC_JUMP;
                 state <= UPDATE_PC;
             end
             UPDATE_PC:
             begin
-//                if(count_state==3'd5)   
-//                    state <= DUMMY;
-//                else if(state == 4'd4)
-//                    state <=UPDATE_PC;
                 state <= DUMMY;
             end
-
             default:
             begin
-                state<=IDLE;            
+                state<=IDLE;
             end
         endcase
     end 
 end
 
-always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_lw_wire,flag_sw_wire,mflo_flag_wire,mult_operation_wire,immediate_selector_wire)begin 
+always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_lw_wire,flag_sw_wire,mflo_flag_wire,mult_operation_wire,immediate_selector_wire,writedata_indicator_wire)begin 
     case(state)
         
         IDLE:
@@ -381,7 +320,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
             IRWrite_reg     =0; /* Enable signal for Instruction Flip flop (ROM to Reg File)*/
             DataWrite_reg   =0; /* Controls the flip flop for data (RAM to Reg File)*/
-            MemtoReg_reg    =0;	/* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
+            MemtoReg_reg    <=writedata_indicator_wire;	/* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
             RegDst_reg      =0; /* Mux selector for A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
             RegWrite_reg    <=0; /* Enables writing on Register file*/
             RDx_FF_en_reg   =0; /* Controls the flip flop from RD1 to SrcA ALU (execution) and from RD2 to MUX4:1*/
@@ -394,7 +333,6 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =1; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            clr_rx_flag_reg =0;
             immediate_selector_reg<=0;
         end
         FETCH:
@@ -408,8 +346,10 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =0;     /* Memory selection: 0=ROM, 1=RAM*/
             IRWrite_reg     <=1;     /* Enable signal for Instruction Flip flop (ROM to Reg File)*/
             DataWrite_reg   =0;     /* Controls the flip flop for data (RAM to Reg File)*/
-            MemtoReg_reg    =0;	    /* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
-            RegDst_reg      =0;     /* Mux selector for A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
+            MemtoReg_reg    <=writedata_indicator_wire;	    /* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
+            //RegDst_reg      =0;     /* Mux selector for A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
+            RegDst_reg      =destination_indicator_wire;     /* Mux selector for A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
+            
             RegWrite_reg    <=0;     /* Enables writing on Register file*/
             RDx_FF_en_reg   =0;     /* Controls the flip flop from RD1 to SrcA ALU (execution) and from RD2 to MUX4:1*/
             ALUSrcB_reg     <=2'd1;  /* Selects operand 01 = 4 to do PC+4*/
@@ -423,7 +363,6 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =1; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            clr_rx_flag_reg =0;
             immediate_selector_reg<=0;
         end
         DECODE:
@@ -439,8 +378,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =0;     /* Memory selection: 0=ROM,  1=RAM*/
             IRWrite_reg     <=0;     /* not relevant*/
             DataWrite_reg   <=0;     /* if it is LW save the data */
-            //MemtoReg_reg    =0;	    /* not relevant */
-            MemtoReg_reg    <=flag_lw_wire;	    /* not relevant */            
+            MemtoReg_reg    <=writedata_indicator_wire;	    /* not relevant */
+            //MemtoReg_reg    <=flag_lw_wire;	    /* not relevant */            
             RegDst_reg      = destination_indicator_wire;     /* A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
             RegWrite_reg    <=0;     /* not relevant*/
             //RegWrite_reg    <=flag_lw_wire[1]; /* save for JAL operation */
@@ -454,8 +393,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            clr_rx_flag_reg =1;
             immediate_selector_reg<=immediate_selector_wire;
+            selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
         end
 
         EXECUTE:
@@ -472,7 +411,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =0; /* not relevant */
             IRWrite_reg     =0; /* not relevant */
             DataWrite_reg   =0; /* not relevant */
-            MemtoReg_reg    =0;	/* not relevant */
+            MemtoReg_reg    <=writedata_indicator_wire;	/* not relevant */
             RegDst_reg      =destination_indicator_wire; /* not relevant */
             RegWrite_reg    <=0; /* not relevant */
             RDx_FF_en_reg   =1; /* not relevant */
@@ -486,23 +425,22 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             mult_operation_reg = 0;
             //mflo_flag_reg = 0;
             mflo_flag_reg = mflo_flag_wire; /* on mflo inst, enable passing data to Aluout reg */
-            clr_rx_flag_reg =0;      
             immediate_selector_reg<=immediate_selector_wire;      
         end
         EXEC_JUMP:
         begin
-        selectPC_reg    =1;
+            selectPC_reg    =1;
             IorD_reg        =0; /* not relevant */
             MemWrite_reg    =0; /* not relevant */
             Mem_select_reg  =0; /* not relevant */
             IRWrite_reg     =0; /* not relevant */
             DataWrite_reg   =0; /* not relevant */
-            //MemtoReg_reg    =0;	/* not relevant */
-            MemtoReg_reg    =flag_lw_wire;	/* select PC for WD3 to the register file for JAL instruction*/
+            MemtoReg_reg    <=writedata_indicator_wire;	/* not relevant */
+            //MemtoReg_reg    =flag_lw_wire;	/* select PC for WD3 to the register file for JAL instruction*/
             
             RegDst_reg      =destination_indicator_wire; /* not relevant */
             //RegWrite_reg    <=0; /* not relevant */
-            RegWrite_reg    <=flag_lw_wire[1]; /* not relevant */
+            RegWrite_reg    <=1; /* relevant but check */
             RDx_FF_en_reg   =0; /* not relevant */
             ALUSrcB_reg     <=ALUSrcB_wire; /*not relevant */
             ALUControl_reg  <=ALUControl_wire; /* not relevant */
@@ -514,7 +452,6 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             
             mult_operation_reg = 0;
             mflo_flag_reg = 0;
-            clr_rx_flag_reg =0;
             immediate_selector_reg<=0;
         end
         UPDATE_PC:
@@ -528,7 +465,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =0;     /* Memory selection: 0=ROM, 1=RAM*/
             IRWrite_reg     <=1;     /* Enable signal for Instruction Flip flop (ROM to Reg File)*/
             DataWrite_reg   =0;     /* Controls the flip flop for data (RAM to Reg File)*/
-            MemtoReg_reg    =0;	    /* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
+            MemtoReg_reg    <=writedata_indicator_wire;	    /* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
             RegDst_reg      =0;     /* Mux selector for A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
             RegWrite_reg    <=0;     /* Enables writing on Register file*/
             RDx_FF_en_reg   =0;     /* Controls the flip flop from RD1 to SrcA ALU (execution) and from RD2 to MUX4:1*/
@@ -543,7 +480,6 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            clr_rx_flag_reg =0;
             immediate_selector_reg<=0;
         end 
         WRITE_BACKTOREG:
@@ -557,7 +493,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
             IRWrite_reg     =0; /* not relevant */
             DataWrite_reg   =0; /* not relevant */
-            MemtoReg_reg    =0;	/* This will select the correct data for WD3; 0=ALUout*/
+            MemtoReg_reg    =writedata_indicator_wire;	/* This will select the correct data for WD3; 0=ALUout*/
             RegDst_reg      =destination_indicator_wire; /* Mux selector for A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
             RegWrite_reg    <=1; /* Enables writing on Register file*/
             RDx_FF_en_reg   =0; /* not relevant */
@@ -570,7 +506,6 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = mult_operation_wire ;
             mflo_flag_reg <= mflo_flag_wire;
-            clr_rx_flag_reg =0;
             immediate_selector_reg<=0;
         end
         GET_EFFECTIVE_ADDR:     /* For sw operation */
@@ -588,7 +523,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             IRWrite_reg     =0; /* not relevant */
             //DataWrite_reg   <=flag_lw_wire; /* not relevant */
             DataWrite_reg   <=0; /* not relevant */
-            MemtoReg_reg    =0;	/* not relevant */
+            MemtoReg_reg    <=writedata_indicator_wire;	/* not relevant */
             RegDst_reg      =0; /* not relevant */
             RegWrite_reg    <=0; /* not relevant */
             RDx_FF_en_reg   =1; /* Controls the flip flop from RD1 to SrcA ALU (execution) and from RD2 to MUX4:1*/
@@ -601,7 +536,6 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            clr_rx_flag_reg =0;
             immediate_selector_reg<=0;
         end 
         STORE:
@@ -613,7 +547,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =1; /* Memory selection: 0=ROM, 1=RAM*/
             IRWrite_reg     =0; /* not relevant */
             DataWrite_reg   =0; /* not relevant */
-            MemtoReg_reg    =0;	/* not relevant */
+            MemtoReg_reg    <=writedata_indicator_wire;	/* not relevant */
             RegDst_reg      =0; /* not relevant */
             RegWrite_reg    <=0; /* not relevant */
             RDx_FF_en_reg   =0; /* not relevant */
@@ -626,7 +560,6 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            clr_rx_flag_reg =0;
             immediate_selector_reg<=0;
         end
         DUMMY:
@@ -637,9 +570,10 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
             IRWrite_reg     =0; /* not relevant */
             DataWrite_reg   =0; /* not relevant */
-            MemtoReg_reg    <=flag_lw_wire;	/* if 0 (normal)-data from alu, if 1(lw inst)-data from ram,if 2 (JAL inst)- data from PC*/
-            RegDst_reg      =0; /* not relevant */
-            RegWrite_reg    <=flag_lw_wire[0]; /* nif lw operation enable the FF writing */
+            //MemtoReg_reg    <=flag_lw_wire;	/* if 0 (normal)-data from alu, if 1(lw inst)-data from ram,if 2 (JAL inst)- data from PC*/
+            MemtoReg_reg    <=writedata_indicator_wire;
+            RegDst_reg      =destination_indicator_wire; /* not relevant */
+            RegWrite_reg    <=flag_lw_wire; /* nif lw operation enable the FF writing */
             RDx_FF_en_reg   =0; /* not relevant */
             ALUSrcB_reg     <=0; /* not relevant */
             ALUControl_reg  =0; /* not relevant */
@@ -650,7 +584,6 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            clr_rx_flag_reg =0;
             immediate_selector_reg<=0;
         end
         LOAD:
@@ -662,7 +595,8 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =1; /* Memory selection: 0=ROM, 1=RAM*/
             IRWrite_reg     =0; /* not relevant */
             DataWrite_reg   =1; /* Controls the flip flop for data (RAM to Reg File)*/
-            MemtoReg_reg    =1;	/* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
+            //MemtoReg_reg    =1;	/* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
+            MemtoReg_reg    <=writedata_indicator_wire;
             RegDst_reg      =destination_indicator_wire; 
             RegWrite_reg    <=1; /* write to register file */
             RDx_FF_en_reg   =0; /* not relevant */
@@ -675,7 +609,6 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            clr_rx_flag_reg =0;
             immediate_selector_reg<=0;
 
         end
@@ -688,7 +621,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
             IRWrite_reg     =0; /* not relevant */
             DataWrite_reg   =0; /* not relevant */
-            MemtoReg_reg    =0;	/* not relevant */
+            MemtoReg_reg    <=writedata_indicator_wire;	/* not relevant */
             RegDst_reg      =0; /* not relevant */
             RegWrite_reg    <=0; /* not relevant */
             RDx_FF_en_reg   =0; /* not relevant */
@@ -702,7 +635,6 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* Signal to enable updating Program Counter */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            clr_rx_flag_reg =0;
             immediate_selector_reg<=0;
         end
         BRANCH_EQUAL_COMPARE:
@@ -714,7 +646,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
             IRWrite_reg     =0; /* Enable signal for Instruction Flip flop (ROM to Reg File)*/
             DataWrite_reg   =0; /* Controls the flip flop for data (RAM to Reg File)*/
-            MemtoReg_reg    =0;	/* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
+            MemtoReg_reg    <=writedata_indicator_wire;	/* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
             RegDst_reg      =0; /* Mux selector for A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
             RegWrite_reg    <=0; /* Enables writing on Register file*/
             RDx_FF_en_reg   =1; /* Controls the flip flop from RD1 to SrcA ALU (execution) and from RD2 to MUX4:1*/
@@ -728,7 +660,6 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* Signal to enable updating Program Counter */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            clr_rx_flag_reg =0;
             immediate_selector_reg<=0;
         end 
         NOTBRANCH_EQUAL_COMPARE:
@@ -740,7 +671,7 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             Mem_select_reg  =0; /* Memory selection: 0=ROM, 1=RAM*/
             IRWrite_reg     =0; /* Enable signal for Instruction Flip flop (ROM to Reg File)*/
             DataWrite_reg   =0; /* Controls the flip flop for data (RAM to Reg File)*/
-            MemtoReg_reg    =0;	/* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
+            MemtoReg_reg    <=writedata_indicator_wire;	/* This will select the correct data for WD3; 0=ALUout, 1=Data from RAM*/
             RegDst_reg      =0; /* Mux selector for A3(destination)-Reg File, 0=rt (imm 20:16), 1=rd (r 15:11)*/
             RegWrite_reg    <=0; /* Enables writing on Register file*/
             RDx_FF_en_reg   =1; /* Controls the flip flop from RD1 to SrcA ALU (execution) and from RD2 to MUX4:1*/
@@ -754,7 +685,6 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* Signal to enable updating Program Counter */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            clr_rx_flag_reg =0;
             immediate_selector_reg<=0;
         end 
         default:
@@ -779,7 +709,6 @@ always@(state,count_state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wir
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            clr_rx_flag_reg =0;
             immediate_selector_reg<=0;
         end
     endcase

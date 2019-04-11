@@ -37,29 +37,14 @@ MIPS_new#(
 	.clk(clk_sys), 				        /* clk signal */
 	//.clk(flag_clk1), 				        /* clk signal */
 	.reset(reset), 			        /* async signal to reset */
-	/* Test signals */    
-    .count_state(counter),
+	/* Test signals */
     .SerialDataIn(SerialDataIn),
     .Rx_flag(Rx_flag),
-    .DataRx(uartdata),
+    .DataRx_out(uartdata),
     .gpio_data_out(leds)
     //.copyRD1(leds)
 );
 
-CounterwFlag_P #(
-	// Parameter Declarations
-    .MAXIMUM_VALUE(4'd6)	
-)machine_cycle_cnt
-(
-	// Input Ports
-	/* .clk(flag_clk1), */
-    /* .clk(pll_clk), */
-    .clk(clk_sys),
-	.reset(reset),
-    .enable(enable),
-	.flag(flag),
-    .counter(counter)
-);
 
 pll2 samplingclk(
         .refclk(clk_sys),   //  refclk.clk

@@ -44,7 +44,7 @@ end
 initial begin
 	#0 reset =0;
 	SerialDataIn=1;
-	#(clk_freq/2) clr_rx_flag = 0;
+	#(clk_freq/2) clr_rx_flag = 1;
 	#10 reset = 1;
 	/* Send start bit */
 	#(500) SerialDataIn = 1'b0;
@@ -71,6 +71,8 @@ initial begin
 	/* Send less significant bit first */
 	#(500) SerialDataIn = 1'b0;
 	#(500) SerialDataIn = 1'b0;
+	clr_rx_flag =0;
+	#15 clr_rx_flag =1;
    	#(500) SerialDataIn = 1'b0;
 	#(500) SerialDataIn = 1'b1;
 	#(500) SerialDataIn = 1'b0;

@@ -43,13 +43,12 @@ MIPS_new
 (
 	.clk(clk), 				        /* clk signal */
 	.reset(reset), 			        /* async signal to reset */    
-    .count_state(counter),
     //.copyRD1(copyRD1)
     //###### UART 
     .SerialDataIn(SerialDataIn),
     //.clr_rx_flag(clr_rx_flag),
     .Rx_flag(Rx_flag),
-    .DataRx(DataRx),
+    .DataRx_out(DataRx),
     .gpio_data_out(leds)
     /* .copyRD1(leds) */
 );
@@ -64,19 +63,19 @@ MIPS_new
 //    .gpio_data_out(leds)  
 //);
 
-CounterwFlag_P 
-#(
-	// Parameter Declarations
-    .MAXIMUM_VALUE(MAXIMUM_VALUE)	
-)machine_cycle_cnt
-(
-	// Input Ports
-	.clk(clk),
-	.reset(reset),
-    .enable(enable),
-	.flag(flag),
-    .counter(counter)
-);
+//CounterwFlag_P 
+//#(
+//	// Parameter Declarations
+//    .MAXIMUM_VALUE(MAXIMUM_VALUE)	
+//)machine_cycle_cnt
+//(
+//	// Input Ports
+//	.clk(clk),
+//	.reset(reset),
+//    .enable(enable),
+//	.flag(flag),
+//    .counter(counter)
+//);
 
 /* initial begin
    #10 clk =!clk;
@@ -95,7 +94,6 @@ initial begin
 	#(clk_freq/2) clr_rx_flag = 1;
     #50 reset =1'b1;
     #0  enable =1'b1;
-    #(clk_freq/2) clr_rx_flag = 0;
 
     /* Send start bit */
 	#(500) SerialDataIn = 1'b0;
@@ -109,9 +107,17 @@ initial begin
 	#(500) SerialDataIn = 1'b1;
 	#(500) SerialDataIn = 1'b0;
 	#(500) SerialDataIn = 1'b0;
-	/* Send stop bit */
-	#(500) SerialDataIn = 1'b1;
-    #(500)
+    	/* #(500) SerialDataIn = 1'b1;
+        #(500) SerialDataIn = 1'b0;
+        #(500) SerialDataIn = 1'b1;
+        #(500) SerialDataIn = 1'b0;
+        #(500) SerialDataIn = 1'b1;
+        #(500) SerialDataIn = 1'b0;
+        #(500) SerialDataIn = 1'b1;
+        #(500) SerialDataIn = 1'b0;*/
+	/* Send stop bit */ 
+	#(500) SerialDataIn = 1'b1;    
+
     // ################### Testing add, addi, & sll instructions ################### //
 
     #0 state=0;    //IDLE
