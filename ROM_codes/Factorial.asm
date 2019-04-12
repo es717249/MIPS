@@ -15,6 +15,7 @@ main:
 	#Keep checking while not receiving uart data
 wait_uartrx:
 	addi $s0,$s0,0	#this will be replaced by instruction: 0x1A100001 - read_Uart
+	andi $zero,$zero,0
 	beq  $s0,$zero,wait_uartrx
 #save data from uart
 get_uart:
@@ -46,7 +47,12 @@ Loop:
 Exit:
 	#see the result in V0 register
 	addi $v0,$v0,0
-	andi $s0,$s0,0	#clean the S0 register
+#	andi $s0,$s0,0	#clean the S0 register
+	#Send the data to the leds 
+	lui $s3,0x1001
+	ori $s3,$s3,0x0024
+	sw $s0,0($s3)	#write the data to the leds
+		
 	j wait_uartrx
 	#lui $s2,0x1001
 	#ori $s2,$s2,0x0024

@@ -115,7 +115,6 @@ always @(posedge clk or negedge reset) begin
 					begin
 						bit_number <=0;
 						clock_count <=0;
-						//Rx_flag_reg <=0;
 						if(SerialDataIn==1)
 							state <= IDLE;
 						else begin
@@ -127,7 +126,6 @@ always @(posedge clk or negedge reset) begin
 					end
 				START:												//check for start bit
 				begin
-					//Rx_flag_reg <=0;
 					if(clock_count == half_bit_time)begin
 					/* the sampling now will be centered */
 						clock_count<=0;
@@ -141,7 +139,6 @@ always @(posedge clk or negedge reset) begin
 				end
 				DELAY:
 				begin
-					//Rx_flag_reg <=0;
 					if(clock_count >= bit_time)begin
 						/* Sample the bit now.It's in the middle of the signal */
 						clock_count <=0;
@@ -170,7 +167,6 @@ always @(posedge clk or negedge reset) begin
 						end else begin
 							clock_count <= clock_count+1;	
 							state 		<= STOP;
-							//Rx_flag_reg <=0;
 						end
 					end	
 				DEFAULT:

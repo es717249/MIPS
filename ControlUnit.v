@@ -53,8 +53,9 @@ module ControlUnit
     output mult_operation_out,
     output mflo_flag_out,
     output selectPC_out,
-    output immediate_src_out,
-    output selector_peripheraldata_out);
+    output immediate_src_out
+    /* output selector_peripheraldata_out */
+    );
 
 //###################### Variables ########################
 
@@ -96,7 +97,7 @@ reg mflo_flag_reg;
 reg selectPC_reg;
 reg immediate_selector_reg;
 /* reg clr_rx_flag_reg; */
-reg selector_peripheraldata_reg;
+reg //selector_peripheraldata_reg;
 
 //####################     Assignations   #######################
 assign IorD = IorD_reg;
@@ -126,7 +127,7 @@ assign immediate_src_out = immediate_selector_reg;
 assign PC_En  = Branch | PCWrite ;    /* Signal for Program counter enable register */
 
 
-assign selector_peripheraldata_out =selector_peripheraldata_reg;
+/* assign selector_peripheraldata_out =//selector_peripheraldata_reg; */
 
 
 decode_instruction decoder_module
@@ -334,6 +335,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
             immediate_selector_reg<=0;
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
         end
         FETCH:
         begin
@@ -364,6 +367,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
             immediate_selector_reg<=0;
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
         end
         DECODE:
         begin
@@ -394,7 +399,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
             immediate_selector_reg<=immediate_selector_wire;
-            selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
         end
 
         EXECUTE:
@@ -426,6 +431,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             //mflo_flag_reg = 0;
             mflo_flag_reg = mflo_flag_wire; /* on mflo inst, enable passing data to Aluout reg */
             immediate_selector_reg<=immediate_selector_wire;      
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
         end
         EXEC_JUMP:
         begin
@@ -453,6 +460,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0;
             mflo_flag_reg = 0;
             immediate_selector_reg<=0;
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
         end
         UPDATE_PC:
         begin
@@ -481,6 +490,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
             immediate_selector_reg<=0;
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
         end 
         WRITE_BACKTOREG:
         begin
@@ -507,6 +518,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = mult_operation_wire ;
             mflo_flag_reg <= mflo_flag_wire;
             immediate_selector_reg<=0;
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
         end
         GET_EFFECTIVE_ADDR:     /* For sw operation */
         begin
@@ -537,6 +550,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
             immediate_selector_reg<=0;
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
         end 
         STORE:
         begin
@@ -561,6 +576,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
             immediate_selector_reg<=0;
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
         end
         DUMMY:
         begin
@@ -585,6 +602,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
             immediate_selector_reg<=0;
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
         end
         LOAD:
         begin
@@ -610,6 +629,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
             immediate_selector_reg<=0;
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
 
         end
         BRANCH_EQUAL_GET_ADDR:
@@ -636,6 +657,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
             immediate_selector_reg<=0;
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
         end
         BRANCH_EQUAL_COMPARE:
         begin 
@@ -661,6 +684,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
             immediate_selector_reg<=0;
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
         end 
         NOTBRANCH_EQUAL_COMPARE:
         begin 
@@ -686,6 +711,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
             immediate_selector_reg<=0;
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
         end 
         default:
         begin 
@@ -710,6 +737,8 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
             immediate_selector_reg<=0;
+            //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
+
         end
     endcase
 end 

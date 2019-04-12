@@ -60,9 +60,10 @@ module UART_TX
 	input reset, //async signal to reset 	
 	input Transmit, //signal to indicate the start of transmission . (Ready)
 	input [Nbit-1:0] DataTx, //Port where Tx data is placed  (tx_data)
+	input clr_tx_flag,		//input to clear endTx flag
 	//outputs
-		
-	output reg SerialDataOut  //Output for serial data  (TxD )	
+	output reg SerialDataOut,  //Output for serial data  (TxD )	
+	output endTx_flag				//bit to indicate end of transmission
 );
 
 //Led to show current machine state
@@ -76,7 +77,7 @@ reg [bit4count:0]bit_number/*synthesis keep*/; //this will help to count N bits 
 reg [2:0] state;
 reg [Nbit-1:0]buff_tx/*synthesis keep*/;  //auxiliary buffer to keep data to transmit
 reg [baud_cnt_bits-1:0] baud_count/*synthesis keep*/; //counter 
-
+reg end_Tx_reg;
 //Process for TX
 always @(posedge clk or negedge reset) begin
 	
@@ -87,100 +88,111 @@ always @(posedge clk or negedge reset) begin
 		baud_count <=0; //restarts the count
 		bit_number <=0; //restarts the count
 		SerialDataOut<=1; //no sending information
+		end_Tx_reg <=0;
 		
 	end
-	else begin 
-		case(state)
-			IDLE:
-			begin
+	else begin
+		if(clr_tx_flag==1'b0)begin
+			end_Tx_reg <=1'b0;
+		end else begin
+			case(state)
+				IDLE:
+				begin
 
-				im_idle=1'b1;
-				im_start=1'b0;
-				im_delay=1'b0;
-				im_shift=1'b0;
-				im_stop=1'b0;
+					im_idle=1'b1;
+					im_start=1'b0;
+					im_delay=1'b0;
+					im_shift=1'b0;
+					im_stop=1'b0;
+					bit_number <=0;	//restarts the count
 
-				bit_number <=0;	//restarts the count
-
-				if(Transmit==0)begin
-					state<= IDLE;
-					buff_tx <= DataTx;	//copy data to transmit
-				end else begin
-					baud_count<=0;
-					state <= START; //start transmission
-				end
-			end
-			START:
-			begin
-				im_idle=1'b0;
-				im_start=1'b1;
-				im_delay=1'b0;
-				im_shift=1'b0;
-				im_stop=1'b0;
-
-				baud_count <=0;
-				SerialDataOut<=0; //sending start indication to bus
-				state <= DELAY;
-			end
-			DELAY:
-			begin
-				im_idle=1'b0;
-				im_start=1'b0;
-				im_delay=1'b1;
-				im_shift=1'b0;
-				im_stop=1'b0;
-
-				if(baud_count >= bit_time)begin
-					baud_count <=0;
-					if(bit_number <= Nbit)begin
-						state <= SHIFT;		//go for a new bit
+					if(Transmit==0)begin
+						state<= IDLE;
+						buff_tx <= DataTx;	//copy data to transmit
 					end else begin
-
-						state <= STOP;	//a bit had been transmitted
+						baud_count<=0;
+						state <= START; //start transmission
 					end
-				end else begin
-					baud_count <= baud_count +1'b1;
-					state <=DELAY;	//keep in delay state
 				end
-			end
-			SHIFT:
-			begin
-				im_idle=1'b0;
-				im_start=1'b0;
-				im_delay=1'b0;
-				im_shift=1'b1;
-				im_stop=1'b0;			
+				START:
+				begin
+					im_idle=1'b0;
+					im_start=1'b1;
+					im_delay=1'b0;
+					im_shift=1'b0;
+					im_stop=1'b0;
 
-				SerialDataOut <= buff_tx[0];
-				//buff_tx[Nbit-2:0] <= buff_tx[Nbit-1:1]; //shift data
-				buff_tx[6:0] <= buff_tx[7:1]; //shift data
-				bit_number <= bit_number +1'b1;
-				state <=DELAY;
-			end
-			STOP:
-			begin
-
-				im_idle=1'b0;
-				im_start=1'b0;
-				im_delay=1'b0;
-				im_shift=1'b0;
-				im_stop =1'b1;
-
-				SerialDataOut <= 1'b1; //send stop indication
-
-				if(baud_count>= bit_time)begin
-					baud_count <=0; //restart the counter
-					state <= IDLE; //go to idle, nothing to send now
-				end else begin
-					baud_count <= baud_count +1'b1;
-					state <= STOP;
+					baud_count <=0;
+					SerialDataOut<=0; //sending start indication to bus
+					state <= DELAY;
 				end
-			end
+				DELAY:
+				begin
+					im_idle=1'b0;
+					im_start=1'b0;
+					im_delay=1'b1;
+					im_shift=1'b0;
+					im_stop=1'b0;
 
-		endcase		
+					if(baud_count >= bit_time)begin
+						baud_count <=0;
+						if(bit_number <= Nbit)begin
+							state <= SHIFT;		//go for a new bit
+						end else begin
+
+							state <= STOP;	//a bit had been transmitted
+						end
+					end else begin
+						baud_count <= baud_count +1'b1;
+						state <=DELAY;	//keep in delay state
+					end
+				end
+				SHIFT:
+				begin
+					im_idle=1'b0;
+					im_start=1'b0;
+					im_delay=1'b0;
+					im_shift=1'b1;
+					im_stop=1'b0;			
+
+					SerialDataOut <= buff_tx[0];
+					//buff_tx[Nbit-2:0] <= buff_tx[Nbit-1:1]; //shift data
+					buff_tx[6:0] <= buff_tx[7:1]; //shift data
+					bit_number <= bit_number +1'b1;
+					state <=DELAY;
+				end
+				STOP:
+				begin
+
+					im_idle=1'b0;
+					im_start=1'b0;
+					im_delay=1'b0;
+					im_shift=1'b0;
+					im_stop =1'b1;
+
+					SerialDataOut <= 1'b1; //send stop indication
+
+					if(baud_count>= bit_time)begin
+						baud_count <=0; //restart the counter
+						end_Tx_reg <=1;
+						state <= IDLE; //go to idle, nothing to send now
+					end else begin
+						baud_count <= baud_count +1'b1;
+						state <= STOP;
+					end
+				end
+
+			endcase		
+		end
 	end
 end
 
+always@(end_Tx_reg)begin
+	if(end_Tx_reg==1'b0)
+		endTx_flag <=1'b0;		
+	else		
+		endTx_flag <=1'b1;
+end
 
 
 /*Log Function*/

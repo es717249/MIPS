@@ -24,8 +24,8 @@ wire flag_clk2/*synthesis keep*/;
 
 wire pll_clk;
 wire pll_locked;
-wire state_out;
-assign state_out = counter;
+/* wire state_out;
+assign state_out = counter; */
 assign happylight = flag_clk1;
 //assign happylight = flag_clk2;
 
