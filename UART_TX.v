@@ -40,6 +40,8 @@ module UART_TX
 	parameter Nbit =8,		//Number of bits to transmit
 	parameter baudrate= 9600,	//baudrate to use 
 	parameter clk_freq =50000000,		//system clock frequency
+	//parameter baudrate= 5,	//baudrate to use 
+	//parameter clk_freq =50,		//system clock frequency
 	parameter bit4count= CeilLog2(Nbit), 
 	parameter bit_time = (clk_freq/baudrate)-1,
 	parameter baud_cnt_bits = CeilLog2(bit_time),

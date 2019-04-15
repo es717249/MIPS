@@ -44,7 +44,19 @@ always@(Data_in_Rx)begin
         8'd56:
             Data_out_Rx_reg <= 8'd8; 
         8'd57:
-            Data_out_Rx_reg <= 8'd9; 
+            Data_out_Rx_reg <= 8'd9;
+        8'd97:  /* a */
+            Data_out_Rx_reg <= 8'd10;
+        8'd98: /* b */
+            Data_out_Rx_reg <= 8'd11;
+        8'd99: /* c */
+            Data_out_Rx_reg <= 8'd12;
+        8'd100: /* d */
+            Data_out_Rx_reg <= 8'd13;
+        8'd101: /* e */
+            Data_out_Rx_reg <= 8'd14;
+        8'd102: /* f */
+            Data_out_Rx_reg <= 8'd15;
         default:
             Data_out_Rx_reg <= 8'd0; 
     endcase 
@@ -72,6 +84,18 @@ always@(Data_in_Tx)begin
             Data_out_Tx_reg <= 8'd56; 
         8'd9:
             Data_out_Tx_reg <= 8'd57;
+        8'ha:
+            Data_out_Tx_reg <= 8'd65;
+        8'hb:
+            Data_out_Tx_reg <= 8'd66;
+        8'hc:
+            Data_out_Tx_reg <= 8'd67;
+        8'hd:
+            Data_out_Tx_reg <= 8'd68;
+        8'he:
+            Data_out_Tx_reg <= 8'd69;
+        8'hf:
+            Data_out_Tx_reg <= 8'd70;
         default:
             Data_out_Tx_reg <= 8'd48; 
     endcase 

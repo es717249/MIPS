@@ -43,8 +43,8 @@ module UART_RX
 	parameter Nbit =8,
 	parameter baudrate= 9600,	
 	parameter clk_freq =50000000,
-	/*parameter baudrate= 5,	
-	parameter clk_freq =50,*/
+	/* parameter baudrate= 5,	
+	parameter clk_freq =50, */
 	parameter bit4count= CeilLog2(Nbit),		
 	parameter bit_time = (clk_freq/baudrate)-1,/* Clocks per bit */
 	//parameter bit_time = (clk_freq/baudrate),/* Clocks per bit */
