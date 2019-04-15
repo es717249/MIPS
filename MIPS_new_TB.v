@@ -30,10 +30,9 @@ module MIPS_new_TB;
     reg clr_rx_flag; //to clear the Rx signal
     wire [Nbit-1:0] DataRx; //Port where Rx information is available
     wire Rx_flag; //indicates a data was received 
-
-MIPS_new
-#
-(
+    wire SerialDataOut;
+    
+MIPS_new#(
     .DATA_WIDTH(DATA_WIDTH),/* length of data */
     .ADDR_WIDTH(ADDR_WIDTH),/* bits to address the elements */
     .UART_Nbit(8),
@@ -49,6 +48,7 @@ MIPS_new
     //.clr_rx_flag(clr_rx_flag),
     .Rx_flag(Rx_flag),
     .DataRx_out(DataRx),
+    .SerialDataOut(SerialDataOut),
     .gpio_data_out(leds)
     /* .copyRD1(leds) */
 );

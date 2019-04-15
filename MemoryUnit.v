@@ -56,6 +56,7 @@ module MemoryUnit
 		//$readmemh("Recursive_Add.hex", rom);	//Test10: Recursive addition program
 		//$readmemh("GPIO_test.hex", rom);	//Test11: 
 		//$readmemh("Test_uartRx.hex", rom);	//Test12: testing uart reading 
+		//$readmemh("Test_uartrxtx.hex", rom);	//Test13: testing uart rx and tx
 
 
 	end

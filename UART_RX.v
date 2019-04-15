@@ -1,10 +1,9 @@
- /******************************************************************* 
+/******************************************************************* 
 * Name:
 *	UART_RX.v
 * Description:
 * 	This module implements an UART RX module
 * Parameters:
-
 *	 Nbit :	Number of bits to transmit
 *	 baudrate: baudrate to use 
 *	 clk_freq : system clock frequency
@@ -12,14 +11,12 @@
 *	 bit_time : number of clk cycles to count
 *	 baud_cnt_bits : number of bits for the baudrate counter 
 *	 half_bit_time : the half of number of clk cycles to count
-
 *	//states for the control machine
 *	 IDLE = 0,
 *	 START= 1,
 *	 DELAY= 2,	Data adquisition
 *	 STOP = 3
 *	DEFAULT=4
-
 * Inputs:
 *
 *	clk :  clk signal
@@ -31,7 +28,6 @@
 *	DataRx : Output for parallel data
 *	Rx_flag : indicates a data was received 
 *	Parity_error : when received logic data contains parity errors. Just for pair parity
-
 * Versión:  
 *	1.0
 * Author: 
@@ -45,10 +41,10 @@
 module UART_RX
 #(
 	parameter Nbit =8,
-	/* parameter baudrate= 9600,	
-	parameter clk_freq =50000000, */
-	parameter baudrate= 5,	
-	parameter clk_freq =50,
+	parameter baudrate= 9600,	
+	parameter clk_freq =50000000,
+	/*parameter baudrate= 5,	
+	parameter clk_freq =50,*/
 	parameter bit4count= CeilLog2(Nbit),		
 	parameter bit_time = (clk_freq/baudrate)-1,/* Clocks per bit */
 	//parameter bit_time = (clk_freq/baudrate),/* Clocks per bit */
@@ -86,7 +82,6 @@ assign DataRx = buff_rx;
 
 /* reg tmp_Rxdata2;
 reg tmp_Rxdata;
-
 always@(posedge clk)begin
 	tmp_Rxdata2 <= SerialDataIn;
 	tmp_Rxdata <= tmp_Rxdata;
@@ -165,7 +160,7 @@ always @(posedge clk or negedge reset) begin
 							Rx_flag_reg <=	1;
 							state <= IDLE;
 						end else begin
-							clock_count <= clock_count+1;	
+							clock_count <= clock_count+1'b1;	
 							state 		<= STOP;
 						end
 					end	
@@ -189,7 +184,6 @@ end
 
 
 /* always@(Rx_flag_reg,clr_rx_flag)begin
-
 	if(clr_rx_flag==1'b0)begin
 		Rx_flag <=1'b0;
 		Rx_flag_reg<=1'b0;
@@ -201,7 +195,6 @@ end */
 
 /* wire enable_paritycheck;
 assign enable_paritycheck = Rx_flag ;
-
 parityCheck
 #( .RxNbit(Nbit))
 parityErr

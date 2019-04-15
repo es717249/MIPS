@@ -14,8 +14,9 @@ main:
 	ori $t1,$t1,0x0028
 	#Keep checking while not receiving uart data
 wait_uartrx:
-	addi $s0,$s0,0	#this will be replaced by instruction: 0x1A100001 - read_Uart
-	andi $zero,$zero,0
+	#The rs will be selected 
+	addi $s0,$s0,0	#this will be replaced by instruction: 0x1A100001 - read_Uart. Opcode 6 
+	andi $zero,$zero,0		#workaround, need to be fixed. It's written 
 	beq  $s0,$zero,wait_uartrx
 #save data from uart
 get_uart:

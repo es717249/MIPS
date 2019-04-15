@@ -10,10 +10,10 @@ module MIPS_new
     parameter ADDR_WIDTH=8,		/* bits to address the elements */    
     //UART RX
     parameter UART_Nbit =8,
-    /* parameter baudrate =9600,
-    parameter clk_freq = 50000000 */
-    parameter baudrate= 5,	
-	parameter clk_freq =50
+    parameter baudrate =9600,
+    parameter clk_freq = 50000000
+    /* parameter baudrate= 5,	
+	parameter clk_freq =50 */
 
 )
 (
@@ -24,7 +24,7 @@ module MIPS_new
     //input clr_rx_flag, //to clear the Rx signal. 0=start new Reception, 1=stop, clear flag after reading the data
     output Rx_flag,  //indicates the data was completely received 
     output [UART_Nbit-1:0] DataRx_out/*synthesis keep*/, //Port where Rx information is available
-    //
+    output SerialDataOut,
     output [7:0] gpio_data_out
     //output [7 : 0] copyRD1
 );
@@ -157,48 +157,36 @@ Signals for UART
 ***************************************************************/
 wire [UART_Nbit-1:0] DataRx_tmp/*synthesis keep*/;
 wire clr_rx_flag/*synthesis keep*/; //to clear the Rx signal. 0=start new Reception, 1=stop, clear flag after reading the data
-/* wire [DATA_WIDTH-1:0] Rx_flag_32bit; */
+wire clr_tx_flag/*synthesis keep*/; //to clear the Tx signal. 0=start new Transmission, 1=no effect
 wire [DATA_WIDTH-1:0] uart_tx_input/*synthesis keep*/;
 wire [DATA_WIDTH-1:0] DataRx/*synthesis keep*/;
+wire see_uartflag_wire/*synthesis keep*/;
+wire Start_Tx/*synthesis keep*/;
+wire Start_uartTx_input_wire/*synthesis keep*/;
+wire Start_uartTx_output_wire/*synthesis keep*/;
+wire enable_StoreTxbuff_fromMem/*synthesis keep*/;   
+wire enable_StoreTxbuff_output/*synthesis keep*/;  
 
 
-assign copyRD1 = RD1[7:0]/*synthesis keep*/; 
-assign DataRx_out = DataRx[7:0]/*synthesis keep*/;
+
+//assign copyRD1 = RD1[7:0]/*synthesis keep*/; 
+
+
 /***************************************************************
 Signals for Peripheral mux
 ***************************************************************/
 wire [DATA_WIDTH-1:0] peripheral_data;
-wire [DATA_WIDTH-1:0] peripheral_int;
+wire [DATA_WIDTH-1:0] Rx_flag_out;
+wire [DATA_WIDTH-1:0] Tx_flag_out;
 wire Data_selector_uart_or_mem;
 wire [DATA_WIDTH-1:0]reserved_output_wb;
 
 
-//####################     UART RX                #######################
-//UART_RX #(
-//	.Nbit(UART_Nbit),
-//	.baudrate(baudrate)	
-//)
-//DUV_RX
-//(
-//	.SerialDataIn(SerialDataIn), //it's the input data port 
-//	.clk(clk), //clk signal
-//	.reset(reset), //async signal to reset 
-//	.clr_rx_flag(clr_rx_flag), //to clear the Rx signal. 0=clear the Rx flag, 1=awaiting for clear operation
-//	//outputs	
-//	.DataRx(DataRx_tmp), //Port where Rx information is available
-//	.Rx_flag(Rx_flag) //indicates a data was received
-//);
 
+assign DataRx_out = DataRx[7:0]/*synthesis keep*/;
+assign Rx_flag = Rx_flag_out[0];
 
-//####################     ASCII translator unit   #######################
-//ASCI_translator #(
-//    .Nbits(UART_Nbit)
-//)ASCII_Trans
-//(
-//    .Data_in(DataRx_tmp),
-//    .Data_out(DataRx)
-//);
-
+//####################     UART controller unit   #######################
 
 UART_controller #(
     .DATA_WIDTH(DATA_WIDTH),
@@ -211,13 +199,29 @@ UART_controller #(
     .clk(clk), 					/* clk signal */
     .reset(reset), 				/* async signal to reset */	
     .clr_rx_flag(clr_rx_flag),
-    .uart_tx(uart_tx_input),
+    .clr_tx_flag(clr_tx_flag),
+    .uart_tx(uart_tx_input),        /* Data to transmit */
+    .Start_Tx( Start_uartTx_output_wire  ),            /* Input */
+    .enable_StoreTxbuff(  enable_StoreTxbuff_output   ),
     /* outputs */
     .UART_data(DataRx),
-    .Rx_flag_out(peripheral_int)
+    .SerialDataOut(SerialDataOut),
+    .Rx_flag_out(Rx_flag_out),
+    .Tx_flag_out(Tx_flag_out)
 );
 
-assign Rx_flag = peripheral_int[0];
+assign enable_StoreTxbuff_output = sw_inst_detector & enable_StoreTxbuff_fromMem;
+//####################     Mux to decide which flag from uart will be read #######################
+
+mux2to1#(.Nbit(DATA_WIDTH))
+MUX_UART_bitRxorTx
+(
+    .mux_sel( see_uartflag_wire ),				//@Control signal: Rx flag or Tx flag
+    .data1(Rx_flag_out), 				//0=Comes from 'PC_Reg'	    
+    .data2(Tx_flag_out), 					//1=From ALUOut signal 
+    .Data_out(peripheral_data) 	//this have the Address for Memory input
+);
+
 
 //####################     GPIO controller unit   #######################
 GPIO_controller #(
@@ -257,7 +261,10 @@ VirtualAddress_RAM #(
     .aligment_error(aligment_error_RAM_wire),
     .dataBack_Selector_out(dataBack_Selector_wire ),
     .Data_selector_periph_or_mem(Data_selector_uart_or_mem),
-    .clr_rx_flag(clr_rx_flag)
+    .clr_rx_flag(clr_rx_flag),
+    .clr_tx_flag(clr_tx_flag),
+    .Start_uart_tx(Start_uartTx_input_wire ),       /* Output from memory controller */
+    .enable_StoreTxbuff(enable_StoreTxbuff_fromMem)
 );
 
 
@@ -286,7 +293,7 @@ ControlUnit CtrlUnit(
     .Funct(funct_wire),
     .Zero(zero),
     .flag_uartdone(Rx_flag),
-    /* .clr_rx_flag(clr_rx_flag), */
+    .Start_uart_tx_input(Start_uartTx_input_wire),
     /* Outputs */
     .IorD(IorD_wire),
     .MemWrite(MemWrite_wire),
@@ -311,9 +318,8 @@ ControlUnit CtrlUnit(
     .mult_operation_out(demux_aluout_sel),		//this controls if the result is saved in Lo-Hi reg(1) or Reg file (0)
     .mflo_flag_out(mflo_flag),
     .selectPC_out(startPC_wire),
-    .immediate_src_out(immediate_selector),
-    .selector_peripheraldata_out(selector_peripheraldata_wire)
-);
+    .see_uartflag(see_uartflag_wire),
+    .Start_uart_tx_output( Start_uartTx_output_wire  )	 );
 
 //####################     Address preparation   #######################
 addres_preparation add_prep
@@ -360,10 +366,8 @@ MemoryUnit #(
 )MemoryMIPS
 (
     /* inputs */
-    
-    //.addr(mux_address_Data_out[5:0]),	//Address to read from ROM
+   
     .addr(mux_address_Data_out[7:0]),	//Address to read from ROM
-    //.wdata(B),			            //data to write to RAM
     .wdata(WD_input),			            //data to write to RAM
     .we(MemWrite_wire),				//@Control signal: enable
     .clk(clk), 						//clock signal
@@ -406,16 +410,8 @@ MUX_Mem_or_Periph_to_MUXWriteData
     .Data_out(  Mem_or_Periph_Data ) 	//this have the Address for Memory input
 );
 
-//#################### A3 Destination Mux ######################
-//mux2to1#(
-//    .Nbit(3'd5)
-//)mux_A3_destination
-//(
-//    .mux_sel(RegDst_wire),		/* 1= R type (rd), 0= I type (rt) */
-//    .data1(rt_wire),
-//    .data2(rd_wire),
-//    .Data_out(mux_A3out)
-//);
+//###############   Mux for Target register, for Register File    ##################
+
 
 mux4to1#(
     .Nbit(3'd5)
@@ -457,20 +453,9 @@ mux4to1 #(
     .data1(demux_aluout_0),		 			//From ALU result	
     .data2( Mem_or_Periph_Data ),				//From Memory: Read data
     .data3(PC_current),             //for JAL instruction, write to Reg 31 ($ra)
-    .data4( peripheral_int ),        //Data from peripherals such as UART
+    .data4( peripheral_data ),        //Data from peripherals such as UART
     .Data_out(datatoWD3) 				//This have the Address for Memory input
 );
-
-
-//###############   FF, from PC to Memory Unit     ##################
-//mux2to1#(16)
-//MUX_immed_Source
-//(
-//    .mux_sel(immediate_selector),				//@Control signal: Immediate source, 0=address preparation , 1=UART register
-//    .data1(immediate_data_wire), 				//0=Comes from immediate field in the instruction	    
-//    .data2(  {{8{1'b0}}, DataRx}), 				//1=From UART buffer
-//    .Data_out(immediateData_toextend) 	//this have the Address for Memory input
-//);
 
 //####################  Sign extend Module  ###############
 SignExtend_module signExt

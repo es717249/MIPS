@@ -10,8 +10,8 @@ module Top_MIPS #(
     input SerialDataIn, //it's the input data port 
     /* outputs */
     output [7:0]leds,            /* output leds */    
-    //output [2:0]state_out,
     output [7:0] uartdata,
+    output SerialDataOut,
     output happylight,           /* alive clk signal */
     output Rx_flag  //indicates the data was completely received 
 );
@@ -20,14 +20,12 @@ wire [2:0] counter /*synthesis keep*/; 		/* 7 states */
 wire flag;
 /* Clock generator signals */
 wire flag_clk1/*synthesis keep*/;
-wire flag_clk2/*synthesis keep*/;
-
 wire pll_clk;
 wire pll_locked;
-/* wire state_out;
-assign state_out = counter; */
+
+
 assign happylight = flag_clk1;
-//assign happylight = flag_clk2;
+
 
 MIPS_new#(
     .DATA_WIDTH(DATA_WIDTH),/* length of data */
@@ -35,14 +33,13 @@ MIPS_new#(
 )testing_unit
 (
 	.clk(clk_sys), 				        /* clk signal */
-	//.clk(flag_clk1), 				        /* clk signal */
 	.reset(reset), 			        /* async signal to reset */
 	/* Test signals */
     .SerialDataIn(SerialDataIn),
     .Rx_flag(Rx_flag),
     .DataRx_out(uartdata),
+    .SerialDataOut(SerialDataOut),
     .gpio_data_out(leds)
-    //.copyRD1(leds)
 );
 
 
@@ -51,7 +48,7 @@ pll2 samplingclk(
 		.rst(reset),      //   reset.reset
 		.outclk_0(pll_clk) // outclk0.clk		
 );
-/* Generate 2s clock  */
+/* Generate 1s clock  */
 
 ClockGen #(
 	// Parameter Declarations
@@ -65,16 +62,6 @@ ClockGen #(
 	.flag(flag_clk1)
 );
 
-ClockGen #(
-	// Parameter Declarations
-    .MAXIMUM_VALUE(2)	
-)clock_2s
-(
-	// Input Ports
-	.clk(pll_clk),
-	.reset(reset),
-    .enable(enable),
-	.flag(flag_clk2)
-);
+
 
 endmodule

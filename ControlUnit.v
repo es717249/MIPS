@@ -28,6 +28,7 @@ module ControlUnit
     input [5:0]Funct,
     input Zero,
     input flag_uartdone,
+    input Start_uart_tx_input,
     //output clr_rx_flag,
     /* Outputs */
     output IorD,
@@ -53,8 +54,8 @@ module ControlUnit
     output mult_operation_out,
     output mflo_flag_out,
     output selectPC_out,
-    output immediate_src_out
-    /* output selector_peripheraldata_out */
+    output see_uartflag, /* to select Rx flag or Tx flag */
+    output Start_uart_tx_output /* Signal to indicate the start of uart Tx  */
     );
 
 //###################### Variables ########################
@@ -71,7 +72,7 @@ wire [1:0] flag_J_type_wire;
 wire [3:0]ALUControl_wire;
 wire mult_operation_wire;
 wire mflo_flag_wire;
-wire immediate_selector_wire;
+
 wire [1:0] writedata_indicator_wire;
 wire selector_peripheraldata_wire;
  
@@ -95,9 +96,8 @@ reg PC_En_reg;
 reg mult_operation_reg;
 reg mflo_flag_reg;
 reg selectPC_reg;
-reg immediate_selector_reg;
-/* reg clr_rx_flag_reg; */
-reg //selector_peripheraldata_reg;
+reg Start_uartTx_signal_reg;
+
 
 //####################     Assignations   #######################
 assign IorD = IorD_reg;
@@ -122,12 +122,10 @@ assign flag_lw_out = flag_lw_wire;
 assign mult_operation_out = mult_operation_reg;
 assign mflo_flag_out = mflo_flag_reg;
 assign selectPC_out = selectPC_reg;
-assign immediate_src_out = immediate_selector_reg;
 /* assign clr_rx_flag = clr_rx_flag_reg; */
 assign PC_En  = Branch | PCWrite ;    /* Signal for Program counter enable register */
 
-
-/* assign selector_peripheraldata_out =//selector_peripheraldata_reg; */
+assign Start_uart_tx_output = Start_uartTx_signal_reg;
 
 
 decode_instruction decoder_module
@@ -145,9 +143,9 @@ decode_instruction decoder_module
     .flag_J_type(flag_J_type_wire),
 	.ALUSrcBselector(ALUSrcB_wire),    //allows to select the operand for getting srcB number
     .mult_operation(mult_operation_wire),
-    .mflo_flag(mflo_flag_wire),
-    .immediate_src(immediate_selector_wire),
-    .writedata_indicator(writedata_indicator_wire)    
+    .mflo_flag(mflo_flag_wire),    
+    .writedata_indicator(writedata_indicator_wire),
+    .see_uartflag_ind(see_uartflag)    
 );
 
 
@@ -190,7 +188,11 @@ always @(posedge clk or negedge reset) begin
                                 /*@TODO: edit this */
                                 state <= BRANCH_EQUAL_GET_ADDR;
                             end 
-                            6'b000110:      /* Uart_rx - 0x06 */
+                            6'b000110:      /* Uart_readFlag_rx - 0x06 */
+                            begin 
+                                state <= EXECUTE;
+                            end
+                            6'b000111:      /* Uart_readFlag_tx - 0x07 */
                             begin 
                                 state <= EXECUTE;
                             end
@@ -309,7 +311,7 @@ always @(posedge clk or negedge reset) begin
     end 
 end
 
-always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_lw_wire,flag_sw_wire,mflo_flag_wire,mult_operation_wire,immediate_selector_wire,writedata_indicator_wire)begin 
+always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_lw_wire,flag_sw_wire,mflo_flag_wire,mult_operation_wire,writedata_indicator_wire,Start_uart_tx_input)begin 
     case(state)
         
         IDLE:
@@ -334,7 +336,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCWrite_reg     =1; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            immediate_selector_reg<=0;
+            Start_uartTx_signal_reg = 0;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
         end
@@ -366,7 +368,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCWrite_reg     =1; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            immediate_selector_reg<=0;
+            Start_uartTx_signal_reg = 0;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
         end
@@ -398,7 +400,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            immediate_selector_reg<=immediate_selector_wire;
+            Start_uartTx_signal_reg = 0;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
         end
 
@@ -430,7 +432,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             mult_operation_reg = 0;
             //mflo_flag_reg = 0;
             mflo_flag_reg = mflo_flag_wire; /* on mflo inst, enable passing data to Aluout reg */
-            immediate_selector_reg<=immediate_selector_wire;      
+            Start_uartTx_signal_reg = 0;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
         end
@@ -459,7 +461,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             
             mult_operation_reg = 0;
             mflo_flag_reg = 0;
-            immediate_selector_reg<=0;
+            Start_uartTx_signal_reg = 0;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
         end
@@ -489,7 +491,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            immediate_selector_reg<=0;
+            Start_uartTx_signal_reg = 0;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
         end 
@@ -517,7 +519,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = mult_operation_wire ;
             mflo_flag_reg <= mflo_flag_wire;
-            immediate_selector_reg<=0;
+            Start_uartTx_signal_reg = 0;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
         end
@@ -549,7 +551,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            immediate_selector_reg<=0;
+            Start_uartTx_signal_reg = 0;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
         end 
@@ -575,7 +577,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            immediate_selector_reg<=0;
+            Start_uartTx_signal_reg = Start_uart_tx_input;    /* Send 1 from Start Tx signal if 0x1001002E is detected */
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
         end
@@ -601,7 +603,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            immediate_selector_reg<=0;
+            Start_uartTx_signal_reg = Start_uart_tx_input;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
         end
@@ -628,7 +630,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            immediate_selector_reg<=0;
+            Start_uartTx_signal_reg = 0;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
 
@@ -656,7 +658,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCWrite_reg     =0; /* Signal to enable updating Program Counter */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            immediate_selector_reg<=0;
+            Start_uartTx_signal_reg = 0;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
         end
@@ -683,7 +685,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCWrite_reg     =0; /* Signal to enable updating Program Counter */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            immediate_selector_reg<=0;
+            Start_uartTx_signal_reg = 0;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
         end 
@@ -710,7 +712,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCWrite_reg     =0; /* Signal to enable updating Program Counter */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            immediate_selector_reg<=0;
+            Start_uartTx_signal_reg = 0;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
         end 
@@ -736,7 +738,7 @@ always@(state,destination_indicator_wire,ALUSrcB_wire,ALUControl_wire,Zero,flag_
             PCWrite_reg     =0; /* not relevant */
             mult_operation_reg = 0 ;
             mflo_flag_reg = 0;
-            immediate_selector_reg<=0;
+            Start_uartTx_signal_reg = 0;
             //selector_peripheraldata_reg = 0 ; //select new available data from peripheral on mux 
 
         end
