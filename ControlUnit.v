@@ -26,8 +26,7 @@ module ControlUnit
 	input reset,            //async signal to reset
     input [5:0]Opcode,
     input [5:0]Funct,
-    input Zero,
-    input flag_uartdone,
+    input Zero,    
     input Start_uart_tx_input,
     //output clr_rx_flag,
     /* Outputs */

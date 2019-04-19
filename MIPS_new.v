@@ -216,10 +216,10 @@ assign enable_StoreTxbuff_output = sw_inst_detector & enable_StoreTxbuff_fromMem
 mux2to1#(.Nbit(DATA_WIDTH))
 MUX_UART_bitRxorTx
 (
-    .mux_sel( see_uartflag_wire ),				//@Control signal: Rx flag or Tx flag
-    .data1(Rx_flag_out), 				//0=Comes from 'PC_Reg'	    
-    .data2(Tx_flag_out), 					//1=From ALUOut signal 
-    .Data_out(peripheral_data) 	//this have the Address for Memory input
+    .mux_sel( see_uartflag_wire ),
+    .data1(Rx_flag_out), 		
+    .data2(Tx_flag_out), 		
+    .Data_out(peripheral_data) 	
 );
 
 
@@ -291,8 +291,7 @@ ControlUnit CtrlUnit(
     .reset(reset), 					//async signal to reset 	
     .Opcode(opcode_wire),
     .Funct(funct_wire),
-    .Zero(zero),
-    .flag_uartdone(Rx_flag),
+    .Zero(zero),    
     .Start_uart_tx_input(Start_uartTx_input_wire),
     /* Outputs */
     .IorD(IorD_wire),
