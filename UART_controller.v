@@ -1,10 +1,10 @@
 module UART_controller #(
     parameter DATA_WIDTH=32,
     parameter UART_Nbit=8,
-    parameter baudrate=9600,
-    parameter clk_freq=50000000,
-    /* parameter baudrate= 5,	
-	parameter clk_freq =50, */
+    /* parameter baudrate=9600,
+    parameter clk_freq=50000000, */
+    parameter baudrate= 5,	
+	parameter clk_freq =50,
 
     /* States UART TX */
     parameter IDLE          =0,
@@ -137,9 +137,11 @@ always @(posedge clk or negedge reset)begin
                         /* uart_tx_copy <=uart_tx; */
                         Send_byte_indicator_reg<=1;
                         state_tx <= START_AND_READ;                    
-                        /* Data_to_Tx_tmp_reg <= uart_tx_copy[7:0] ; */
-                        Data_to_Tx_tmp_reg <= { {4{1'b0}} ,uart_tx_copy[3:0] };
+                        
+                        /* Data_to_Tx_tmp_reg <= { {4{1'b0}} ,uart_tx_copy[3:0] }; */
+                        Data_to_Tx_tmp_reg <= { {4{1'b0}} ,uart_tx_copy[31:28] };
                         cleanTx_flag_reg<=1;    /* Clean End byte flag */
+                        
                     end else begin
                         if(enable_StoreTxbuff==1)begin
                             uart_tx_copy <=uart_tx;
@@ -158,9 +160,9 @@ always @(posedge clk or negedge reset)begin
                         if(endTx_flag==1'b1)begin
                             byte_number <=byte_number+3'b1;
                             cleanTx_flag_reg<=0;    /* Clean End byte flag */
-                            /* shift data */
-                            /* uart_tx_copy[23:0] <= uart_tx_copy[31:8]; */
-                            uart_tx_copy[27:0] <= uart_tx_copy[31:4];
+                            /* shift data */                            
+                            /* uart_tx_copy[27:0] <= uart_tx_copy[31:4]; */
+                            uart_tx_copy[31:4] <= uart_tx_copy[27:0];
 
                             Send_byte_indicator_reg<=0;
                             state_tx <=SHIFT;    
@@ -181,9 +183,9 @@ always @(posedge clk or negedge reset)begin
                     /* wait till data is shifted */
                     
 
-                    if(byte_number <8)begin
-                        /* Data_to_Tx_tmp_reg <= uart_tx_copy[7:0] ;   */
-                        Data_to_Tx_tmp_reg <=  { {4{1'b0}} ,uart_tx_copy[3:0] };
+                    if(byte_number <8)begin                        
+                        /* Data_to_Tx_tmp_reg <=  { {4{1'b0}} ,uart_tx_copy[3:0] }; */
+                        Data_to_Tx_tmp_reg <= { {4{1'b0}} ,uart_tx_copy[31:28] };
                         cleanTx_flag_reg <=1'b1;      
                         Send_byte_indicator_reg<=1;
                         state_tx<=UPDATE_DATA;
