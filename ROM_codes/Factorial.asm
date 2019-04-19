@@ -1,12 +1,8 @@
 .text
-
-	#The instruction to read uart is: 0x1A100000
-
 main:
 	#Initializing stack pointer
 	lui	$sp,0x1001
 	ori	$sp,$sp,0x0100
-	#0x1A100000
 	#Initialize for storing Uart Rx data
 	lui $t0,0x1001
 	ori $t0,$t0,0x0028
@@ -39,7 +35,7 @@ get_uart:
 	j Send_to_Tx				# Jump to Main label
 	
 Factorial:
-	slti $t2, $a0, 1 # if n = 1
+	slti $t2, $a0, 1 #Starts Factorial execution. if n = 1
 	beq $t2, $zero, Loop # Branch to Loop
 	addi $v0, $zero, 1 # Loading 1
 	jr $ra # Return to the caller	
@@ -49,8 +45,8 @@ Loop:
 	sw $a0, 0($sp) #  Storing the resturn address
 	addi $a0, $a0, -1 # Decreasing n
 	jal Factorial # recursive function
-	lw $a0, 0($sp) # Loading values from stak
-	lw $ra, 4($sp) # Loading values from stak
+	lw $a0, 0($sp) # Loading values from stack
+	lw $ra, 4($sp) # Loading values from stack
 	addi $sp, $sp, 8 # Increasing stack pointer
 	mult $a0, $v0 # Multiplying n*Factorial(n-1)
 	mflo $v0
@@ -70,12 +66,11 @@ wait_txdone:
 #Clean the Tx flag
 	andi $s1,$s1,0
 	sw $s1,0($t5)		#Clean the Tx flag
+	andi $s0,$s0,0
+	j wait_uartrx		#Go back and Wait for another data from uart
 	
-
-	#Send the data to the leds @TODO: pending to verify
+		#Send the data to the leds @TODO: pending to verify
 		#lui $s3,0x1001
 		#ori $s3,$s3,0x0024
 		#sw $s0,0($s3)	#write the data to the leds
-	andi $s0,$s0,0
-	j wait_uartrx
 	
